@@ -15,6 +15,11 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::post('/game-save', function () {
+    $input = Illuminate\Support\Facades\Input::all();
+    file_put_contents('/tmp/debug', print_r($input, 1) . "\n\n");
+});
+
 Auth::routes();
 
 Route::get('/home', 'HomeController@index')->name('home');

@@ -23,6 +23,7 @@ class HomeController extends Controller
      */
     public function index()
     {
-        return view('home');
+        $user = \Illuminate\Support\Facades\Auth::user();
+        return view('home')->with('user_id', $user ? $user->id : null);
     }
 }

@@ -7,7 +7,7 @@
             <p class="pull-right" v-if="drawGame">DRAW!</p>
         </div>
         <div class="panel-body">
-            Number of moves: {{ moves }}<br />
+            Number of moves: {{ moves.length }}<br />
             <button class="btn btn-primary" @click="reset">Reset</button>
         </div>
     </div>
@@ -15,7 +15,12 @@
 
 <script>
     import Cell from './Cell.vue';
+    import axios from 'axios';
+    import moment from 'moment';
+
     export default {
+        props: ['player2'],
+
         components: {Cell},
 
         data() {
@@ -24,9 +29,10 @@
                 firstUserTurn: true,
                 grid_width: 3,
                 nb_cells: 9,
-                moves: 0,
+                moves: [],
                 drawGame: false,
-                lastCell: -1
+                lastCell: -1,
+                time_start: moment()
             }
         },
 
@@ -57,7 +63,8 @@
 
             reset() {
                 this.firstUserTurn = true
-                this.moves = 0
+                this.moves = []
+                this.drawGame = false
                 this.lastCell = -1
                 this.initBoard()
             },
@@ -66,15 +73,34 @@
                 if (this.isGameOver) {
                     return false
                 }
-                this.moves++
+                this.moves.push(index)
                 this.lastCell = index
                 let cell = this.cells[index]
                 cell.display = this.firstUserTurn ? 'X' : 'O'
                 this.firstUserTurn = !this.firstUserTurn
                 Vue.set(this.cells, index, cell)
-                if (this.moves == this.nb_cells && !this.isGameOver) {
+                if (this.moves.length == this.nb_cells && !this.isGameOver) {
                     this.drawGame = true
+                    this.saveGame()
+                } else if (this.isGameOver) {
+                    this.saveGame()
                 }
+            },
+
+            saveGame() {
+                let data = {
+                    elapsed: moment().diff(this.time_start, 'seconds'),
+                    moves: this.moves,
+                    winner: this.lastCell % 2 == 0 ? "p1" : "p2",
+                    size: this.grid_width
+                }
+                axios.post('/game-save', data)
+                        .then(this.notifySaved)
+                        .catch(error => console.log(error))
+            },
+
+            notifySaved() {
+
             },
 
             winsRow() {
@@ -97,7 +123,7 @@
                 if (this.lastCell % (this.grid_width + 1) === 0) {
                     // check top-left->bottom-right diagonal
                     for (let i = 0; i < this.grid_width; i++) {
-                        cells.push(this.cells[i*(this.grid_width+1)])
+                        cells.push(this.cells[i * (this.grid_width + 1)])
                     }
                     if (this.winsAllCells(cells)) {
                         return true
@@ -107,7 +133,7 @@
                     // check top-right->bottom-left diagonal
                     cells = []
                     for (let i = 0; i < this.grid_width; i++) {
-                        cells.push(this.cells[(i+1) * (this.grid_width - 1)])
+                        cells.push(this.cells[(i + 1) * (this.grid_width - 1)])
                     }
                     if (this.winsAllCells(cells)) {
                         return true
@@ -127,7 +153,7 @@
 
         computed: {
             isGameOver() {
-                if (this.lastCell === -1 || this.moves < this.grid_width * 2 - 1) {
+                if (this.lastCell === -1 || this.moves.length < this.grid_width * 2 - 1) {
                     return false
                 }
                 if (this.winsDiagonal() || this.winsRow() || this.winsColumn()) {

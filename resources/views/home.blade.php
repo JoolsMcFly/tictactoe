@@ -15,19 +15,16 @@
     </div>
     <div class="row">
         <div class="col-md-8 col-md-offset-2">
-            <board :player2="player2"></board>
+            <board v-if="gameStarted" :opponent="opponent" :me="me"></board>
         </div>
         <div class="col-md-2">
             Players online:<br />
             <ul>
-                <li v-for="player in players">
-                    @{{ player.name }} (@{{ player.id }})
+                <li v-for="player in players" @click="ping(player.id)">
+                    @{{ player.name }}
                 </li>
             </ul>
         </div>
     </div>
 </div>
-<script>
-window.user_id = {{ $user_id }};
-</script>
 @endsection

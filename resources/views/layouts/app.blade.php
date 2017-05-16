@@ -12,6 +12,14 @@
 
     <!-- Styles -->
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    @if (!Auth::guest())
+    <script>
+    window.ttt_user = {
+        id: {{ Auth::user()->id }},
+        name: '{{ Auth::user()->name }}'
+    };
+    </script>
+    @endif
 </head>
 <body>
     <div>
@@ -77,6 +85,12 @@
     <!-- Scripts -->
     @if (!Auth::guest())
     <script src="{{ asset('js/app.js') }}"></script>
+    <script>
+    window.ttt_user = {
+        id: {{ Auth::user()->id }},
+        name: '{{ Auth::user()->name }}'
+    };
+    </script>
     @endif
 </body>
 </html>

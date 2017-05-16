@@ -7,6 +7,8 @@
             <p class="pull-right" v-if="drawGame">DRAW!</p>
         </div>
         <div class="panel-body">
+            <p>{{ me.name }} is playing against {{ opponent.name }}</p>
+            <p>{{cur_player.name}}'s turn</p>
             Number of moves: {{ moves.length }}<br />
             <button class="btn btn-primary" @click="reset">Reset</button>
         </div>
@@ -19,7 +21,7 @@
     import moment from 'moment';
 
     export default {
-        props: ['player2'],
+        props: ['opponent', 'me'],
 
         components: {Cell},
 
@@ -38,6 +40,10 @@
 
         mounted() {
             this.initBoard()
+            Echo.private('App.User.' + this.me.id)
+                    .listen('NewMoveEvent', e => {
+                        this.handleClick(e.move.index, false)
+                    })
         },
 
         methods: {
@@ -69,7 +75,7 @@
                 this.initBoard()
             },
 
-            handleClick(index) {
+            handleClick(index, notify) {
                 if (this.isGameOver) {
                     return false
                 }
@@ -79,6 +85,9 @@
                 cell.display = this.firstUserTurn ? 'X' : 'O'
                 this.firstUserTurn = !this.firstUserTurn
                 Vue.set(this.cells, index, cell)
+                if (notify !== false && this.opponent.id !== null) {
+                    this.sendMoveToOpponent();
+                }
                 if (this.moves.length == this.nb_cells && !this.isGameOver) {
                     this.drawGame = true
                     this.saveGame()
@@ -101,6 +110,14 @@
 
             notifySaved() {
 
+            },
+
+            sendMoveToOpponent() {
+                axios.post('/new-move/' + this.opponent.id, {index: this.lastCell, display: this.cells[this.lastCell].display})
+                        .then(e => {
+                            console.log("Move sent");
+                            console.log(e);
+                        });
             },
 
             winsRow() {
@@ -152,6 +169,10 @@
         },
 
         computed: {
+            cur_player() {
+                return this.moves.length % 2 === 0 ? this.me : this.opponent
+            },
+
             isGameOver() {
                 if (this.lastCell === -1 || this.moves.length < this.grid_width * 2 - 1) {
                     return false

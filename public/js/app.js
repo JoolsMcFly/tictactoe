@@ -16432,10 +16432,17 @@ var app = new Vue({
     el: '#app',
 
     data: {
-        player2: {
-            id: 10,
-            name: 'dawg'
+        opponent: {
+            id: null,
+            name: 'Comp'
         },
+        me: {
+            id: null,
+            name: "me"
+        },
+
+        gameStarted: false,
+
         players: []
     },
 
@@ -16451,10 +16458,31 @@ var app = new Vue({
                     return p.id != e.id;
                 });
             });
+            Echo.private('App.User.' + this.me.id).listen('GameRequestEvent', function (e) {
+                console.log('game request');
+                console.log(e);
+                axios.post('/new-game-accepted/' + e.id).then(function () {
+                    console.log('game accepted sent');
+                });
+            }).listen('GameStartedEvent', function (user) {
+                _this.gameStarted = true;
+                _this.opponent = user;
+                console.log("game started");
+            });
+        },
+        ping: function ping(user_id) {
+            axios.post('/new-game-request/' + user_id).then(function (e) {
+                console.log('game request return');
+                console.log(e);
+            }).catch(function (e) {
+                console.log('game request error');
+                console.log(e);
+            });
         }
     },
 
     mounted: function mounted() {
+        this.me = window.ttt_user;
         this.listen();
     }
 });
@@ -17327,13 +17355,15 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
 
 
 
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
-    props: ['player2'],
+    props: ['opponent', 'me'],
 
     components: { Cell: __WEBPACK_IMPORTED_MODULE_0__Cell_vue___default.a },
 
@@ -17350,7 +17380,12 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         };
     },
     mounted: function mounted() {
+        var _this = this;
+
         this.initBoard();
+        Echo.private('App.User.' + this.me.id).listen('NewMoveEvent', function (e) {
+            _this.handleClick(e.move.index, false);
+        });
     },
 
 
@@ -17380,7 +17415,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             this.lastCell = -1;
             this.initBoard();
         },
-        handleClick: function handleClick(index) {
+        handleClick: function handleClick(index, notify) {
             if (this.isGameOver) {
                 return false;
             }
@@ -17390,6 +17425,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             cell.display = this.firstUserTurn ? 'X' : 'O';
             this.firstUserTurn = !this.firstUserTurn;
             Vue.set(this.cells, index, cell);
+            if (notify !== false && this.opponent.id !== null) {
+                this.sendMoveToOpponent();
+            }
             if (this.moves.length == this.nb_cells && !this.isGameOver) {
                 this.drawGame = true;
                 this.saveGame();
@@ -17409,6 +17447,12 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             });
         },
         notifySaved: function notifySaved() {},
+        sendMoveToOpponent: function sendMoveToOpponent() {
+            __WEBPACK_IMPORTED_MODULE_1_axios___default.a.post('/new-move/' + this.opponent.id, { index: this.lastCell, display: this.cells[this.lastCell].display }).then(function (e) {
+                console.log("Move sent");
+                console.log(e);
+            });
+        },
         winsRow: function winsRow() {
             var row = Math.floor(this.lastCell / this.grid_width);
             var cells = this.cells.slice(row * this.grid_width, (row + 1) * this.grid_width);
@@ -17455,6 +17499,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     },
 
     computed: {
+        cur_player: function cur_player() {
+            return this.moves.length % 2 === 0 ? this.me : this.opponent;
+        },
         isGameOver: function isGameOver() {
             if (this.lastCell === -1 || this.moves.length < this.grid_width * 2 - 1) {
                 return false;
@@ -52833,7 +52880,7 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     staticClass: "pull-right"
   }, [_vm._v("DRAW!")]) : _vm._e()], 2), _vm._v(" "), _c('div', {
     staticClass: "panel-body"
-  }, [_vm._v("\n        Number of moves: " + _vm._s(_vm.moves.length)), _c('br'), _vm._v(" "), _c('button', {
+  }, [_c('p', [_vm._v(_vm._s(_vm.me.name) + " is playing against " + _vm._s(_vm.opponent.name))]), _vm._v(" "), _c('p', [_vm._v(_vm._s(_vm.cur_player.name) + "'s turn")]), _vm._v("\n        Number of moves: " + _vm._s(_vm.moves.length)), _c('br'), _vm._v(" "), _c('button', {
     staticClass: "btn btn-primary",
     on: {
       "click": _vm.reset

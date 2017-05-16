@@ -21,10 +21,17 @@ const app = new Vue({
     el: '#app',
 
     data: {
-        player2: {
-            id: 10,
-            name: 'dawg'
+        opponent: {
+            id: null,
+            name: 'Comp'
         },
+        me: {
+            id: null,
+            name: "me"
+        },
+
+        gameStarted: false,
+
         players: []
     },
 
@@ -36,10 +43,34 @@ const app = new Vue({
                     .listen('UserLogoutEvent', (e) => {
                         this.players = this.players.filter(p => p.id != e.id)
                     });
+            Echo.private('App.User.' + this.me.id)
+                    .listen('GameRequestEvent', e => {
+                        console.log('game request')
+                        console.log(e)
+                        axios.post('/new-game-accepted/' + e.id).then( () => {
+                            console.log('game accepted sent');
+                        })
+                    })
+                    .listen('GameStartedEvent', user => {
+                        this.gameStarted = true
+                        this.opponent = user;
+                        console.log("game started")
+                    })
+        },
+
+        ping(user_id) {
+            axios.post('/new-game-request/' + user_id).then(e => {
+                console.log('game request return');
+                console.log(e);
+            }).catch(e => {
+                console.log('game request error');
+                console.log(e);
+            });
         }
     },
 
     mounted() {
-        this.listen();
+        this.me = window.ttt_user
+        this.listen()
     }
 });

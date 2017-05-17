@@ -15,7 +15,7 @@
     </div>
     <div class="row">
         <div class="col-md-8 col-md-offset-2">
-            <board v-if="gameStarted" :opponent="opponent" :me="me"></board>
+            <board v-if="gameStarted" :opponent="opponent" :me="me" :starts_game="starts_game"></board>
         </div>
         <div class="col-md-2">
             Players online:<br />

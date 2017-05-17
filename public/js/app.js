@@ -16443,6 +16443,8 @@ var app = new Vue({
 
         gameStarted: false,
 
+        starts_game: false,
+
         players: []
     },
 
@@ -16450,31 +16452,37 @@ var app = new Vue({
         listen: function listen() {
             var _this = this;
 
-            Echo.channel('user-activity').listen('UserLoginEvent', function (e) {
-                return _this.players.push(e);
-            });
-            Echo.channel('user-activity').listen('UserLogoutEvent', function (e) {
-                _this.players = _this.players.filter(function (p) {
-                    return p.id != e.id;
-                });
-            });
             Echo.private('App.User.' + this.me.id).listen('GameRequestEvent', function (e) {
-                console.log('game request');
-                console.log(e);
+                console.log('game request from ' + e.name + "(" + e.id + ")");
                 axios.post('/new-game-accepted/' + e.id).then(function () {
-                    console.log('game accepted sent');
+                    console.log('Sent game accepted to ' + e.id);
                 });
-            }).listen('GameStartedEvent', function (user) {
+            }).listen('GameStartedEvent', function (data) {
+                console.log("Received game started event");
+                console.log(data);
                 _this.gameStarted = true;
-                _this.opponent = user;
-                console.log("game started");
+                _this.opponent = data.user;
+                _this.cur_player = data.starts_game ? _this.me : _this.opponent;
+                _this.starts_game = data.starts_game;
+            });
+            Echo.join('tictactoe').here(function (users) {
+                _this.players = users.filter(function (u) {
+                    return u.id != _this.me.id;
+                });
+            }).joining(function (user) {
+                _this.players.push(user);
+            }).leaving(function (user) {
+                _this.players = _this.players.filter(function (u) {
+                    return u.id != user.id;
+                });
+                if (user.id == _this.opponent.id) {
+                    _this.gameStarted = false;
+                    _this.opponent = { id: null, name: 'Comp' };
+                }
             });
         },
         ping: function ping(user_id) {
-            axios.post('/new-game-request/' + user_id).then(function (e) {
-                console.log('game request return');
-                console.log(e);
-            }).catch(function (e) {
+            axios.post('/new-game-request/' + user_id).then(function (e) {}).catch(function (e) {
                 console.log('game request error');
                 console.log(e);
             });
@@ -17363,20 +17371,20 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
-    props: ['opponent', 'me'],
+    props: ['opponent', 'me', 'starts_game'],
 
     components: { Cell: __WEBPACK_IMPORTED_MODULE_0__Cell_vue___default.a },
 
     data: function data() {
         return {
             cells: [],
-            firstUserTurn: true,
             grid_width: 3,
             nb_cells: 9,
             moves: [],
             drawGame: false,
             lastCell: -1,
-            time_start: __WEBPACK_IMPORTED_MODULE_2_moment___default()()
+            time_start: __WEBPACK_IMPORTED_MODULE_2_moment___default()(),
+            cur_player: null
         };
     },
     mounted: function mounted() {
@@ -17399,6 +17407,11 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                     display: ''
                 });
             }
+            if (this.starts_game) {
+                this.cur_player = this.me;
+            } else {
+                this.cur_player = this.opponent;
+            }
         },
         incSize: function incSize(step) {
             if (this.grid_width <= 3 && step < 0 || this.grid_width >= 9 && step > 0) {
@@ -17409,23 +17422,27 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             this.reset();
         },
         reset: function reset() {
-            this.firstUserTurn = true;
             this.moves = [];
             this.drawGame = false;
             this.lastCell = -1;
+            this.cur_player = null;
             this.initBoard();
         },
-        handleClick: function handleClick(index, notify) {
+        handleClick: function handleClick(index) {
+            var user_click = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
             if (this.isGameOver) {
                 return false;
             }
-            this.moves.push(index);
+            if (user_click && this.cur_player.id != this.me.id) {
+                return false;
+            }
             this.lastCell = index;
-            var cell = this.cells[index];
-            cell.display = this.firstUserTurn ? 'X' : 'O';
-            this.firstUserTurn = !this.firstUserTurn;
-            Vue.set(this.cells, index, cell);
-            if (notify !== false && this.opponent.id !== null) {
+            this.applyMove();
+            if (!this.isGameOver) {
+                this.changePlayerTurn();
+            }
+            if (user_click !== false && this.opponent.id !== null) {
                 this.sendMoveToOpponent();
             }
             if (this.moves.length == this.nb_cells && !this.isGameOver) {
@@ -17435,11 +17452,24 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 this.saveGame();
             }
         },
+        changePlayerTurn: function changePlayerTurn() {
+            if (this.cur_player.id == this.me.id) {
+                this.cur_player = this.opponent;
+            } else {
+                this.cur_player = this.me;
+            }
+        },
+        applyMove: function applyMove() {
+            var cell = this.cells[this.lastCell];
+            cell.display = this.moves.length % 2 === 0 ? 'X' : '0';
+            Vue.set(this.cells, this.lastCell, cell);
+            this.moves.push(this.lastCell);
+        },
         saveGame: function saveGame() {
             var data = {
                 elapsed: __WEBPACK_IMPORTED_MODULE_2_moment___default()().diff(this.time_start, 'seconds'),
                 moves: this.moves,
-                winner: this.lastCell % 2 == 0 ? "p1" : "p2",
+                winner: this.cur_player.name,
                 size: this.grid_width
             };
             __WEBPACK_IMPORTED_MODULE_1_axios___default.a.post('/game-save', data).then(this.notifySaved).catch(function (error) {
@@ -17499,8 +17529,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     },
 
     computed: {
-        cur_player: function cur_player() {
-            return this.moves.length % 2 === 0 ? this.me : this.opponent;
+        vsComp: function vsComp() {
+            return this.opponent.id == null;
         },
         isGameOver: function isGameOver() {
             if (this.lastCell === -1 || this.moves.length < this.grid_width * 2 - 1) {
@@ -52844,6 +52874,9 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     staticClass: "panel-heading"
   }, [_vm._v("Game board - "), _c('button', {
     staticClass: "btn btn-primary btn-sm",
+    attrs: {
+      "disabled": !_vm.vsComp
+    },
     on: {
       "click": function($event) {
         _vm.incSize(1)
@@ -52851,6 +52884,9 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     }
   }, [_vm._v("Inc size")]), _vm._v(" - "), _c('button', {
     staticClass: "btn btn-primary btn-sm",
+    attrs: {
+      "disabled": !_vm.vsComp
+    },
     on: {
       "click": function($event) {
         _vm.incSize(-1)
@@ -52876,11 +52912,17 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     })
   }), _vm._v(" "), (_vm.isGameOver) ? _c('p', {
     staticClass: "pull-right"
-  }, [_vm._v("VICTORY!")]) : _vm._e(), _vm._v(" "), (_vm.drawGame) ? _c('p', {
+  }, [_vm._v(_vm._s(_vm.cur_player.name) + " WINS!")]) : _vm._e(), _vm._v(" "), (_vm.drawGame) ? _c('p', {
     staticClass: "pull-right"
   }, [_vm._v("DRAW!")]) : _vm._e()], 2), _vm._v(" "), _c('div', {
     staticClass: "panel-body"
-  }, [_c('p', [_vm._v(_vm._s(_vm.me.name) + " is playing against " + _vm._s(_vm.opponent.name))]), _vm._v(" "), _c('p', [_vm._v(_vm._s(_vm.cur_player.name) + "'s turn")]), _vm._v("\n        Number of moves: " + _vm._s(_vm.moves.length)), _c('br'), _vm._v(" "), _c('button', {
+  }, [_c('p', [_vm._v(_vm._s(_vm.me.name) + " is playing against " + _vm._s(_vm.opponent.name))]), _vm._v(" "), (_vm.cur_player) ? _c('p', [_vm._v(_vm._s(_vm.cur_player.name) + "'s turn")]) : _vm._e(), _vm._v("\n        Number of moves: " + _vm._s(_vm.moves.length)), _c('br'), _vm._v(" "), _c('button', {
+    directives: [{
+      name: "show",
+      rawName: "v-show",
+      value: (_vm.vsComp),
+      expression: "vsComp"
+    }],
     staticClass: "btn btn-primary",
     on: {
       "click": _vm.reset

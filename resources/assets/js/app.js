@@ -31,37 +31,47 @@ const app = new Vue({
         },
 
         gameStarted: false,
+        
+        starts_game: false,
 
         players: []
     },
 
     methods: {
         listen() {
-            Echo.channel('user-activity')
-                    .listen('UserLoginEvent', (e) => this.players.push(e));
-            Echo.channel('user-activity')
-                    .listen('UserLogoutEvent', (e) => {
-                        this.players = this.players.filter(p => p.id != e.id)
-                    });
             Echo.private('App.User.' + this.me.id)
                     .listen('GameRequestEvent', e => {
-                        console.log('game request')
-                        console.log(e)
-                        axios.post('/new-game-accepted/' + e.id).then( () => {
-                            console.log('game accepted sent');
+                        console.log('game request from ' + e.name + "(" + e.id + ")")
+                        axios.post('/new-game-accepted/' + e.id).then(() => {
+                            console.log('Sent game accepted to ' + e.id);
                         })
                     })
-                    .listen('GameStartedEvent', user => {
+                    .listen('GameStartedEvent', data => {
+                        console.log("Received game started event")
+                        console.log(data);
                         this.gameStarted = true
-                        this.opponent = user;
-                        console.log("game started")
+                        this.opponent = data.user
+                        this.cur_player = data.starts_game ? this.me : this.opponent
+                        this.starts_game = data.starts_game
+                    });
+            Echo.join('tictactoe')
+                    .here(users => {
+                        this.players = users.filter(u => u.id != this.me.id)
                     })
+                    .joining(user => {
+                        this.players.push(user)
+                    })
+                    .leaving(user => {
+                        this.players = this.players.filter(u => u.id != user.id)
+                        if (user.id == this.opponent.id) {
+                            this.gameStarted = false
+                            this.opponent = {id: null, name: 'Comp'}
+                        }
+                    });
         },
 
         ping(user_id) {
             axios.post('/new-game-request/' + user_id).then(e => {
-                console.log('game request return');
-                console.log(e);
             }).catch(e => {
                 console.log('game request error');
                 console.log(e);

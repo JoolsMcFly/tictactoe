@@ -27,14 +27,20 @@ class GameStartedEvent implements ShouldBroadcast
     private $from_user;
 
     /**
+     * @var bool
+     */
+    private $starts_game;
+
+    /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct(User $to_user)
+    public function __construct(User $to_user, $from_user, $starts_game = false)
     {
         $this->to_user = $to_user;
-        $this->from_user = Auth::user();
+        $this->from_user = $from_user;
+        $this->starts_game = $starts_game;
     }
 
     /**
@@ -50,8 +56,11 @@ class GameStartedEvent implements ShouldBroadcast
     public function broadcastWith()
     {
         return [
-            'id' => $this->from_user->id,
-            'name' => $this->from_user->name
+            'user' => [
+                'id' => $this->from_user->id,
+                'name' => $this->from_user->name
+            ],
+            'starts_game' => $this->starts_game
         ];
     }
 }

@@ -20,3 +20,7 @@ Broadcast::channel('App.User.{id}', function ($user, $id) {
 Broadcast::channel('App.Game.{id}', function ($user) {
     return (int) Auth::user()->id == (int) $user->id;
 });
+
+Broadcast::channel('tictactoe', function ($user) {
+    return ['id' => $user->id, 'name' => $user->name];
+});

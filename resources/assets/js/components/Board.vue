@@ -1,16 +1,16 @@
 <template>
     <div class="panel panel-default">
-        <div class="panel-heading">Game board - <button class="btn btn-primary btn-sm" @click="incSize(1)">Inc size</button> - <button class="btn btn-primary btn-sm" @click="incSize(-1)">Dec size</button></div>
+        <div class="panel-heading">Game board - <button class="btn btn-primary btn-sm" :disabled="!vsComp" @click="incSize(1)">Inc size</button> - <button class="btn btn-primary btn-sm" :disabled="!vsComp" @click="incSize(-1)">Dec size</button></div>
         <div class="panel-body">
             <cell v-for="cell in cells" :key="cell.index" :index="cell.index" :display="cell.display" @click.native="handleClick(cell.index)" :class="{clear: cell.index % grid_width == 0}"></cell>
-            <p class="pull-right" v-if="isGameOver">VICTORY!</p>
+            <p class="pull-right" v-if="isGameOver">{{ cur_player.name }} WINS!</p>
             <p class="pull-right" v-if="drawGame">DRAW!</p>
         </div>
         <div class="panel-body">
             <p>{{ me.name }} is playing against {{ opponent.name }}</p>
-            <p>{{cur_player.name}}'s turn</p>
+            <p v-if="cur_player">{{cur_player.name}}'s turn</p>
             Number of moves: {{ moves.length }}<br />
-            <button class="btn btn-primary" @click="reset">Reset</button>
+            <button v-show="vsComp" class="btn btn-primary" @click="reset">Reset</button>
         </div>
     </div>
 </template>
@@ -21,20 +21,20 @@
     import moment from 'moment';
 
     export default {
-        props: ['opponent', 'me'],
+        props: ['opponent', 'me', 'starts_game'],
 
         components: {Cell},
 
         data() {
             return {
                 cells: [],
-                firstUserTurn: true,
                 grid_width: 3,
                 nb_cells: 9,
                 moves: [],
                 drawGame: false,
                 lastCell: -1,
-                time_start: moment()
+                time_start: moment(),
+                cur_player: null
             }
         },
 
@@ -56,6 +56,12 @@
                         display: ''
                     });
                 }
+                if (this.starts_game) {
+                    this.cur_player = this.me
+                }
+                else {
+                    this.cur_player = this.opponent
+                }
             },
 
             incSize(step) {
@@ -68,24 +74,26 @@
             },
 
             reset() {
-                this.firstUserTurn = true
                 this.moves = []
                 this.drawGame = false
                 this.lastCell = -1
+                this.cur_player = null
                 this.initBoard()
             },
 
-            handleClick(index, notify) {
+            handleClick(index, user_click = true) {
                 if (this.isGameOver) {
                     return false
                 }
-                this.moves.push(index)
+                if (user_click && this.cur_player.id != this.me.id) {
+                    return false
+                }
                 this.lastCell = index
-                let cell = this.cells[index]
-                cell.display = this.firstUserTurn ? 'X' : 'O'
-                this.firstUserTurn = !this.firstUserTurn
-                Vue.set(this.cells, index, cell)
-                if (notify !== false && this.opponent.id !== null) {
+                this.applyMove()
+                if (!this.isGameOver) {
+                    this.changePlayerTurn()
+                }
+                if (user_click !== false && this.opponent.id !== null) {
                     this.sendMoveToOpponent();
                 }
                 if (this.moves.length == this.nb_cells && !this.isGameOver) {
@@ -95,12 +103,28 @@
                     this.saveGame()
                 }
             },
+            
+            changePlayerTurn() {
+                if (this.cur_player.id == this.me.id) {
+                    this.cur_player = this.opponent
+                }
+                else {
+                    this.cur_player = this.me
+                }
+            },
+
+            applyMove() {
+                let cell = this.cells[this.lastCell]
+                cell.display = this.moves.length % 2 === 0 ? 'X' : '0'
+                Vue.set(this.cells, this.lastCell, cell)
+                this.moves.push(this.lastCell)
+            },
 
             saveGame() {
                 let data = {
                     elapsed: moment().diff(this.time_start, 'seconds'),
                     moves: this.moves,
-                    winner: this.lastCell % 2 == 0 ? "p1" : "p2",
+                    winner: this.cur_player.name,
                     size: this.grid_width
                 }
                 axios.post('/game-save', data)
@@ -169,8 +193,8 @@
         },
 
         computed: {
-            cur_player() {
-                return this.moves.length % 2 === 0 ? this.me : this.opponent
+            vsComp() {
+                return this.opponent.id == null
             },
 
             isGameOver() {

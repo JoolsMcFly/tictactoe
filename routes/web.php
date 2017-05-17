@@ -33,8 +33,8 @@ Route::post('/new-move/{to}', function (User $to) {
 });
 
 Route::post('/new-game-accepted/{to}', function (User $to) {
-    broadcast(new App\Events\GameStartedEvent($to));
-    broadcast(new App\Events\GameStartedEvent(Auth::user()));
+    broadcast(new App\Events\GameStartedEvent($to, Auth::user(), true));
+    broadcast(new App\Events\GameStartedEvent(Auth::user(), $to, false));
 });
 
 Auth::routes();

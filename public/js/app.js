@@ -16427,6 +16427,10 @@ window.Vue = __webpack_require__(165);
  */
 
 Vue.component('board', __webpack_require__(158));
+Vue.component('modal', {
+    template: '#modal-player-details',
+    props: ['player_details']
+});
 
 var app = new Vue({
     el: '#app',
@@ -16444,6 +16448,10 @@ var app = new Vue({
         gameStarted: false,
 
         starts_game: false,
+
+        showPlayerDetails: false,
+
+        player_details: {},
 
         players: []
     },
@@ -16464,6 +16472,8 @@ var app = new Vue({
                 _this.opponent = data.user;
                 _this.cur_player = data.starts_game ? _this.me : _this.opponent;
                 _this.starts_game = data.starts_game;
+            }).listen('GameOverEvent', function (data) {
+                _this.me = data;
             });
             Echo.join('tictactoe').here(function (users) {
                 _this.players = users.filter(function (u) {
@@ -16479,6 +16489,25 @@ var app = new Vue({
                     _this.gameStarted = false;
                     _this.opponent = { id: null, name: 'Comp' };
                 }
+            });
+        },
+        newGameVsComp: function newGameVsComp() {
+            this.opponent = { id: null, name: "Comp" };
+            this.cur_player = this.me;
+            this.starts_game = true;
+            this.gameStarted = true;
+        },
+        showDetails: function showDetails(user_id) {
+            var _this2 = this;
+
+            axios.post('/player/' + user_id).then(function (e) {
+                _this2.player_details = e.data;
+                var size_played = [];
+                for (size in e.data.size_played) {
+                    size_played.push(size + " x " + size + ": " + e.data.size_played[size] + " times");
+                }
+                _this2.player_details.size_played = size_played.join("<br />");
+                _this2.showPlayerDetails = true;
             });
         },
         ping: function ping(user_id) {
@@ -17434,7 +17463,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             if (this.isGameOver) {
                 return false;
             }
-            if (user_click && this.cur_player.id != this.me.id) {
+            if (!this.vsComp && user_click && this.cur_player.id != this.me.id) {
                 return false;
             }
             this.lastCell = index;
@@ -17442,7 +17471,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             if (!this.isGameOver) {
                 this.changePlayerTurn();
             }
-            if (user_click !== false && this.opponent.id !== null) {
+            if (user_click !== false && !this.vsComp) {
                 this.sendMoveToOpponent();
             }
             if (this.moves.length == this.nb_cells && !this.isGameOver) {
@@ -17450,6 +17479,14 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 this.saveGame();
             } else if (this.isGameOver) {
                 this.saveGame();
+            } else if (this.vsComp && this.cur_player.id != this.me.id) {
+                // Comp is stupid
+                var first_empty_cell = this.cells.find(function (c) {
+                    return c.display == '';
+                });
+                if (first_empty_cell !== undefined) {
+                    this.handleClick(first_empty_cell.index);
+                }
             }
         },
         changePlayerTurn: function changePlayerTurn() {
@@ -17466,10 +17503,14 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             this.moves.push(this.lastCell);
         },
         saveGame: function saveGame() {
+            if (!this.starts_game) {
+                return false;
+            }
             var data = {
                 elapsed: __WEBPACK_IMPORTED_MODULE_2_moment___default()().diff(this.time_start, 'seconds'),
                 moves: this.moves,
-                winner: this.cur_player.name,
+                winner: this.cur_player.id,
+                looser: this.cur_player.id == this.opponent.id ? this.me.id : this.opponent.id,
                 size: this.grid_width
             };
             __WEBPACK_IMPORTED_MODULE_1_axios___default.a.post('/game-save', data).then(this.notifySaved).catch(function (error) {
@@ -52916,7 +52957,7 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     staticClass: "pull-right"
   }, [_vm._v("DRAW!")]) : _vm._e()], 2), _vm._v(" "), _c('div', {
     staticClass: "panel-body"
-  }, [_c('p', [_vm._v(_vm._s(_vm.me.name) + " is playing against " + _vm._s(_vm.opponent.name))]), _vm._v(" "), (_vm.cur_player) ? _c('p', [_vm._v(_vm._s(_vm.cur_player.name) + "'s turn")]) : _vm._e(), _vm._v("\n        Number of moves: " + _vm._s(_vm.moves.length)), _c('br'), _vm._v(" "), _c('button', {
+  }, [_c('p', [_vm._v("You're playing against " + _vm._s(_vm.opponent.name))]), _vm._v(" "), (_vm.cur_player) ? _c('p', [_vm._v(_vm._s(_vm.cur_player.name) + "'s turn")]) : _vm._e(), _vm._v("\n        Number of moves: " + _vm._s(_vm.moves.length)), _c('br'), _vm._v(" "), _c('button', {
     directives: [{
       name: "show",
       rawName: "v-show",

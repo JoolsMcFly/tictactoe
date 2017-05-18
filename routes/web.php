@@ -1,5 +1,6 @@
 <?php
 use App\Events\GameRequestEvent;
+use App\Events\GameOverEvent;
 use App\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Input;
@@ -21,7 +22,38 @@ Route::get('/', function () {
 
 Route::post('/game-save', function () {
     $input = Input::all();
-    file_put_contents('/tmp/debug', print_r($input, 1) . "\n\n");
+    \App\Game::create([
+        'winner' => $input['winner'],
+        'looser' => $input['looser'],
+        'extra' => [
+            'elapsed' => $input['elapsed'],
+            'size' => $input['size'],
+            'moves' => $input['moves']
+        ]
+    ]);
+    foreach ([$input['winner'], $input['looser']] as $user_id) {
+        $player = User::find($user_id);
+        if (!$player) {
+            continue;
+        }
+        if ($user_id == $input['winner']) {
+            $player->wins++;
+        }
+        else {
+            $player->losses++;
+        }
+        $player->total_moves += count($input['moves']);
+        $player->total_time += $input['elapsed'];
+        $size_played = $player->size_played;
+        if (empty($size_played[$input['size']])) {
+            $size_played[$input['size']] = 1;
+        } else {
+            $size_played[$input['size']]++;
+        }
+        $player->size_played = $size_played;
+        $player->save();
+        broadcast(new GameOverEvent($player));
+    }
 });
 
 Route::post('/new-game-request/{to}', function (User $to) {
@@ -40,3 +72,8 @@ Route::post('/new-game-accepted/{to}', function (User $to) {
 Auth::routes();
 
 Route::get('/home', 'HomeController@index')->name('home');
+
+Route::post('/player/{to}', function (User $to) {
+    $a = $to->toArray();
+    return response()->json($a);
+});

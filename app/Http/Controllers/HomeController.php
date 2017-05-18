@@ -24,6 +24,6 @@ class HomeController extends Controller
     public function index()
     {
         $user = \Illuminate\Support\Facades\Auth::user();
-        return view('home')->with('user_id', $user ? $user->id : null);
+        return view('home')->with('user', $user ? $user->toArray() : null);
     }
 }

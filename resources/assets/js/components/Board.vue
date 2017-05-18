@@ -7,7 +7,7 @@
             <p class="pull-right" v-if="drawGame">DRAW!</p>
         </div>
         <div class="panel-body">
-            <p>{{ me.name }} is playing against {{ opponent.name }}</p>
+            <p>You're playing against {{ opponent.name }}</p>
             <p v-if="cur_player">{{cur_player.name}}'s turn</p>
             Number of moves: {{ moves.length }}<br />
             <button v-show="vsComp" class="btn btn-primary" @click="reset">Reset</button>
@@ -85,7 +85,7 @@
                 if (this.isGameOver) {
                     return false
                 }
-                if (user_click && this.cur_player.id != this.me.id) {
+                if (!this.vsComp && user_click && this.cur_player.id != this.me.id) {
                     return false
                 }
                 this.lastCell = index
@@ -93,7 +93,7 @@
                 if (!this.isGameOver) {
                     this.changePlayerTurn()
                 }
-                if (user_click !== false && this.opponent.id !== null) {
+                if (user_click !== false && !this.vsComp) {
                     this.sendMoveToOpponent();
                 }
                 if (this.moves.length == this.nb_cells && !this.isGameOver) {
@@ -101,6 +101,13 @@
                     this.saveGame()
                 } else if (this.isGameOver) {
                     this.saveGame()
+                }
+                else if (this.vsComp && this.cur_player.id != this.me.id) {
+                    // Comp is stupid
+                    let first_empty_cell = this.cells.find( c => c.display == '')
+                    if (first_empty_cell !== undefined) {
+                        this.handleClick(first_empty_cell.index)
+                    }
                 }
             },
             
@@ -121,10 +128,14 @@
             },
 
             saveGame() {
+                if (!this.starts_game) {
+                    return false
+                }
                 let data = {
                     elapsed: moment().diff(this.time_start, 'seconds'),
                     moves: this.moves,
-                    winner: this.cur_player.name,
+                    winner: this.cur_player.id,
+                    looser: (this.cur_player.id == this.opponent.id ? this.me.id : this.opponent.id),
                     size: this.grid_width
                 }
                 axios.post('/game-save', data)

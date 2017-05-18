@@ -14,10 +14,7 @@
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
     @if (!Auth::guest())
     <script>
-    window.ttt_user = {
-        id: {{ Auth::user()->id }},
-        name: '{{ Auth::user()->name }}'
-    };
+    window.ttt_user = JSON.parse('{!! json_encode($user) !!}');
     </script>
     @endif
 </head>
@@ -85,12 +82,6 @@
     <!-- Scripts -->
     @if (!Auth::guest())
     <script src="{{ asset('js/app.js') }}"></script>
-    <script>
-    window.ttt_user = {
-        id: {{ Auth::user()->id }},
-        name: '{{ Auth::user()->name }}'
-    };
-    </script>
     @endif
 </body>
 </html>

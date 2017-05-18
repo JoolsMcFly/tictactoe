@@ -9,7 +9,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class GameStartedEvent implements ShouldBroadcast
+class GameRefusedEvent implements ShouldBroadcast
 {
 
     use Dispatchable,
@@ -21,25 +21,19 @@ class GameStartedEvent implements ShouldBroadcast
     private $to_user;
 
     /**
-     * @var User
+     * @var string
      */
-    private $from_user;
-
-    /**
-     * @var bool
-     */
-    private $starts_game;
+    public $reason;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct(User $to_user, $from_user, $starts_game = false)
+    public function __construct(User $to_user, $reason)
     {
         $this->to_user = $to_user;
-        $this->from_user = $from_user;
-        $this->starts_game = $starts_game;
+        $this->reason = $reason;
     }
 
     /**
@@ -50,16 +44,5 @@ class GameStartedEvent implements ShouldBroadcast
     public function broadcastOn()
     {
         return new PrivateChannel('App.User.' . $this->to_user->id);
-    }
-
-    public function broadcastWith()
-    {
-        return [
-            'user' => [
-                'id' => $this->from_user->id,
-                'name' => $this->from_user->name
-            ],
-            'starts_game' => $this->starts_game
-        ];
     }
 }

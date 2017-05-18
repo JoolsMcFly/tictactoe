@@ -69,6 +69,10 @@ Route::post('/new-game-accepted/{to}', function (User $to) {
     broadcast(new App\Events\GameStartedEvent(Auth::user(), $to, false));
 });
 
+Route::post('/new-game-refused/{to}', function (User $to) {
+    broadcast(new App\Events\GameRefusedEvent($to, Input::get('reason')));
+});
+
 Auth::routes();
 
 Route::get('/home', 'HomeController@index')->name('home');

@@ -85,6 +85,9 @@
                 if (this.isGameOver) {
                     return false
                 }
+                if (this.moves.length == 0) {
+                    this.time_start = moment()
+                }
                 if (!this.vsComp && user_click && this.cur_player.id != this.me.id) {
                     return false
                 }
@@ -128,6 +131,7 @@
             },
 
             saveGame() {
+                this.$emit('gameover')
                 if (!this.starts_game) {
                     return false
                 }

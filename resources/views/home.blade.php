@@ -9,6 +9,15 @@
 
                 <div class="panel-body">
                     <p>@{{ me.name }}, you have lost <span v-text="me.losses"></span> time@{{me.losses != 1 ? 's' : ''}} and won <span v-text="me.wins"></span> time@{{ me.wins != 1 ? 's' : ''}}.</p>
+                    <div v-show="alert" class="alert alert-warning alert-dismissible fade in" role="alert">
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>
+                        @{{ alert }}
+                    </div>
+                    <div v-if="game_request" class="alert alert-warning alert-dismissible fade in" role="alert">
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>
+                        @{{ game_request.name }} wants to play with you!
+                        <button class="btn btn-primary" @click="acceptGameRequest">Accept</button>&nbsp;<button class="btn btn-danger" @click="refuseGameRequest">Refuse</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -16,7 +25,7 @@
     <div class="row">
         <div class="col-md-8 col-md-offset-2">
             <button class="btn btn-primary" v-show="!this.gameStarted" @click="newGameVsComp">Me Vs Comp</button>
-            <board v-if="gameStarted" :opponent="opponent" :me="me" :starts_game="starts_game"></board>
+            <board v-if="gameStarted" :opponent="opponent" :me="me" :starts_game="starts_game" v-on:gameover="gameover"></board>
         </div>
         <div class="col-md-2">
             Players online:<br />

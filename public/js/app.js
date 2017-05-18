@@ -16453,21 +16453,30 @@ var app = new Vue({
 
         player_details: {},
 
-        players: []
-    },
+        alert: '',
 
+        players: [],
+
+        game_request: null
+    },
     methods: {
+        gameover: function gameover() {
+            this.gameStarted = false;
+        },
         listen: function listen() {
             var _this = this;
 
             Echo.private('App.User.' + this.me.id).listen('GameRequestEvent', function (e) {
-                console.log('game request from ' + e.name + "(" + e.id + ")");
-                axios.post('/new-game-accepted/' + e.id).then(function () {
-                    console.log('Sent game accepted to ' + e.id);
-                });
+                if (_this.gameStarted) {
+                    axios.post('/new-game-refused/' + e.id, { reason: 'Game request refused. Player is busy... Playing!' });
+                } else {
+                    _this.game_request = _this.players.find(function (p) {
+                        return p.id == e.id;
+                    });
+                }
+            }).listen('GameRefusedEvent', function (data) {
+                _this.alert = data.reason;
             }).listen('GameStartedEvent', function (data) {
-                console.log("Received game started event");
-                console.log(data);
                 _this.gameStarted = true;
                 _this.opponent = data.user;
                 _this.cur_player = data.starts_game ? _this.me : _this.opponent;
@@ -16491,6 +16500,19 @@ var app = new Vue({
                 }
             });
         },
+        acceptGameRequest: function acceptGameRequest() {
+            var _this2 = this;
+
+            axios.post('/new-game-accepted/' + this.game_request.id).then(function () {
+                _this2.game_request = null;
+            }).catch(function (e) {
+                console.log('Error when accepting game request');
+                console.log(e);
+            });
+        },
+        refuseGameRequest: function refuseGameRequest() {
+            axios.post('/new-game-refused/' + this.game_request.id, { reason: "Game request refused because player doesn't feel like playing right now." }).then(this.game_request = null);
+        },
         newGameVsComp: function newGameVsComp() {
             this.opponent = { id: null, name: "Comp" };
             this.cur_player = this.me;
@@ -16498,16 +16520,16 @@ var app = new Vue({
             this.gameStarted = true;
         },
         showDetails: function showDetails(user_id) {
-            var _this2 = this;
+            var _this3 = this;
 
             axios.post('/player/' + user_id).then(function (e) {
-                _this2.player_details = e.data;
+                _this3.player_details = e.data;
                 var size_played = [];
                 for (size in e.data.size_played) {
                     size_played.push(size + " x " + size + ": " + e.data.size_played[size] + " times");
                 }
-                _this2.player_details.size_played = size_played.join("<br />");
-                _this2.showPlayerDetails = true;
+                _this3.player_details.size_played = size_played.join("<br />");
+                _this3.showPlayerDetails = true;
             });
         },
         ping: function ping(user_id) {
@@ -17463,6 +17485,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             if (this.isGameOver) {
                 return false;
             }
+            if (this.moves.length == 0) {
+                this.time_start = __WEBPACK_IMPORTED_MODULE_2_moment___default()();
+            }
             if (!this.vsComp && user_click && this.cur_player.id != this.me.id) {
                 return false;
             }
@@ -17503,6 +17528,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             this.moves.push(this.lastCell);
         },
         saveGame: function saveGame() {
+            this.$emit('gameover');
             if (!this.starts_game) {
                 return false;
             }

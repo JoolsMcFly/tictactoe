@@ -42,21 +42,30 @@ const app = new Vue({
 
         player_details: {},
 
-        players: []
-    },
+        alert: '',
 
+        players: [],
+
+        game_request: null
+    },
     methods: {
+        gameover() {
+            this.gameStarted = false
+        },
+
         listen() {
             Echo.private('App.User.' + this.me.id)
                     .listen('GameRequestEvent', e => {
-                        console.log('game request from ' + e.name + "(" + e.id + ")")
-                        axios.post('/new-game-accepted/' + e.id).then(() => {
-                            console.log('Sent game accepted to ' + e.id);
-                        })
+                        if (this.gameStarted) {
+                            axios.post('/new-game-refused/' + e.id, {reason: 'Game request refused. Player is busy... Playing!'})
+                        } else {
+                            this.game_request = this.players.find(p => p.id == e.id)
+                        }
+                    })
+                    .listen('GameRefusedEvent', data => {
+                        this.alert = data.reason
                     })
                     .listen('GameStartedEvent', data => {
-                        console.log("Received game started event")
-                        console.log(data);
                         this.gameStarted = true
                         this.opponent = data.user
                         this.cur_player = data.starts_game ? this.me : this.opponent
@@ -79,6 +88,19 @@ const app = new Vue({
                             this.opponent = {id: null, name: 'Comp'}
                         }
                     });
+        },
+
+        acceptGameRequest() {
+            axios.post('/new-game-accepted/' + this.game_request.id).then(() => {
+                this.game_request = null
+            }).catch(e => {
+                console.log('Error when accepting game request')
+                console.log(e)
+            })
+        },
+
+        refuseGameRequest() {
+            axios.post('/new-game-refused/' + this.game_request.id, {reason: "Game request refused because player doesn't feel like playing right now."}).then(this.game_request = null)
         },
 
         newGameVsComp() {

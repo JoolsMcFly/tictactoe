@@ -8,8 +8,7 @@
                 <div class="panel-heading">Dashboard</div>
 
                 <div class="panel-body">
-                    <p>@{{ me.name }} You have lost <span v-text="me.losses"></span> times.</p>
-                    <p>@{{ me.name }} You have won <span v-text="me.wins"></span> times.</p>
+                    <p>@{{ me.name }}, you have lost <span v-text="me.losses"></span> time@{{me.losses != 1 ? 's' : ''}} and won <span v-text="me.wins"></span> time@{{ me.wins != 1 ? 's' : ''}}.</p>
                 </div>
             </div>
         </div>

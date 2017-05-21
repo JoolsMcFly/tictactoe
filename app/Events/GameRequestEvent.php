@@ -26,15 +26,18 @@ class GameRequestEvent implements ShouldBroadcast
      */
     private $from_user;
 
+    private $grid_width = 3;
+
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct(User $to_user)
+    public function __construct(User $to_user, $grid_width = 3)
     {
         $this->to_user = $to_user;
         $this->from_user = Auth::user();
+        $this->grid_width = $grid_width;
     }
 
     /**
@@ -51,7 +54,8 @@ class GameRequestEvent implements ShouldBroadcast
     {
         return [
             'id' => $this->from_user->id,
-            'name' => $this->from_user->name
+            'name' => $this->from_user->name,
+            'grid_width' => $this->grid_width
         ];
     }
 }

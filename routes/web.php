@@ -25,6 +25,7 @@ Route::post('/game-save', function () {
     \App\Game::create([
         'winner' => $input['winner'],
         'looser' => $input['looser'],
+        'first_player' => $input['first_player'],
         'extra' => [
             'elapsed' => $input['elapsed'],
             'size' => $input['size'],
@@ -57,7 +58,8 @@ Route::post('/game-save', function () {
 });
 
 Route::post('/new-game-request/{to}', function (User $to) {
-    broadcast(new GameRequestEvent($to));
+    $grid_width = Input::get('grid_width', 3);
+    broadcast(new GameRequestEvent($to, $grid_width));
 });
 
 Route::post('/new-move/{to}', function (User $to) {

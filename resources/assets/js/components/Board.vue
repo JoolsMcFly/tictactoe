@@ -1,11 +1,10 @@
 <template>
-    <div class="panel panel-default">
-        <div class="panel-heading">Game board - <button class="btn btn-primary btn-sm" :disabled="!vsComp" @click="incSize(1)">Inc size</button> - <button class="btn btn-primary btn-sm" :disabled="!vsComp" @click="incSize(-1)">Dec size</button></div>
+    <div>
         <div class="panel-body">
             <cell v-for="cell in cells" :key="cell.index" :index="cell.index" :display="cell.display" @click.native="handleClick(cell.index)" :class="{clear: cell.index % grid_width == 0}"></cell>
         </div>
         <div class="panel-body">
-            <p>You're playing against {{ opponent.name }}</p>
+            <button class="btn btn-primary btn-sm" :disabled="!vsComp" @click="incSize(1)">Inc size</button> - <button class="btn btn-primary btn-sm" :disabled="!vsComp" @click="incSize(-1)">Dec size</button>
             <p v-if="cur_player">{{cur_player.name}}'s turn</p>
             Number of moves: {{ moves.length }}<br />
             <button v-show="vsComp" class="btn btn-primary" @click="reset">Reset</button>
@@ -35,14 +34,14 @@
     import moment from 'moment';
 
             export default {
-                props: ['opponent', 'me', 'starts_game'],
+                props: ['opponent', 'me', 'starts_game', 'playbackdata', 'default_grid_width'],
 
                 components: {Cell},
 
                 data() {
                     return {
                         cells: [],
-                        grid_width: 3,
+                        grid_width: this.default_grid_width,
                         nb_cells: 9,
                         moves: [],
                         drawGame: false,
@@ -78,7 +77,7 @@
                     },
 
                     incSize(step) {
-                        if ((this.grid_width <= 3 && step < 0) || (this.grid_width >= 9 && step > 0)) {
+                        if ((this.grid_width <= 3 && step < 0) || (this.grid_width >= 10 && step > 0)) {
                             return false
                         }
                         this.grid_width += step
@@ -93,15 +92,29 @@
                         this.cur_player = null
                         this.initBoard()
                     },
+                    
+                    handlePlayBackClick () {
+                        this.lastCell = this.recordedMoves.shift()
+                        this.applyMove()
+                        if (!this.isGameOver) {
+                            this.changePlayerTurn()
+                        }
+                        else {
+                           $('#modal-game-over').modal('show') 
+                        }
+                    },
 
-                    handleClick(index, user_click = true) {
-                        if (this.isGameOver) {
+                    handleClick(index, user_triggered_click = true) {
+                        if (this.isGameOver || this.cells[index].display !== '') { 
                             return false
                         }
-                        if (this.moves.length == 0) {
+                        if (this.isPlayingBack) {
+                            return this.handlePlayBackClick()
+                        }
+                        if (this.moves.length === 0) {
                             this.time_start = moment()
                         }
-                        if (!this.vsComp && user_click && this.cur_player.id != this.me.id) {
+                        if (this.notMyTurn(user_triggered_click)) {
                             return false
                         }
                         this.lastCell = index
@@ -109,19 +122,23 @@
                         if (!this.isGameOver) {
                             this.changePlayerTurn()
                         }
-                        if (user_click !== false && !this.vsComp) {
+                        if (user_triggered_click !== false && !this.vsComp && !this.isPlayingBack) {
                             this.sendMoveToOpponent();
                         }
                         if (this.isGameOver) {
                             $('#modal-game-over').modal('show')
                             this.saveGame()
                         } else if (this.vsComp && this.cur_player.id != this.me.id) {
-                            // Comp is stupid
-                            let first_empty_cell = this.cells.find(c => c.display == '')
-                            if (first_empty_cell !== undefined) {
-                                this.handleClick(first_empty_cell.index)
-                            }
-                    }
+                            this.letComputerPlay()
+                        }
+                    },
+                    
+                    letComputerPlay () {
+                        // Comp is stupid
+                        let first_empty_cell = this.cells.find(c => c.display == '')
+                        if (first_empty_cell !== undefined) {
+                            this.handleClick(first_empty_cell.index)
+                        }  
                     },
 
                     changePlayerTurn() {
@@ -140,23 +157,24 @@
                     },
 
                     saveGame() {
-                        if (!this.starts_game) {
+                        if (!this.starts_game || this.isPlayingBack) {
                             return false
                         }
                         let data = {
                             elapsed: moment().diff(this.time_start, 'seconds'),
                             moves: this.moves,
+                            first_player: this.starts_game ? this.me.id : this.opponent.id,
                             winner: this.cur_player.id,
-                            looser: (this.cur_player.id == this.opponent.id ? this.me.id : this.opponent.id),
+                            looser: (this.cur_player.id === this.opponent.id ? this.me.id : this.opponent.id),
                             size: this.grid_width
                         }
                         axios.post('/game-save', data)
                                 .then(this.notifySaved)
                                 .catch(error => console.log(error))
                     },
-
-                    notifySaved() {
-//                this.$emit('gameover')
+                    
+                    notMyTurn (user_triggered_click) {
+                        return !this.vsComp && user_triggered_click && this.cur_player.id != this.me.id
                     },
 
                     sendMoveToOpponent() {
@@ -238,6 +256,10 @@
                             return "It's a draw game!"
                         }
                         return this.cur_player.id == this.me.id ? 'YOU WIN!' : this.cur_player.name + " WINS!"
+                    },
+                    
+                    isPlayingBack () {
+                        return this.playbackdata !== null
                     }
                 }
             }

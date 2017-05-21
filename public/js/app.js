@@ -16414,10 +16414,6 @@ __webpack_require__(148);
 window.Vue = __webpack_require__(165);
 
 Vue.component('board', __webpack_require__(158));
-Vue.component('modal', {
-    template: '#modal-player-details',
-    props: ['player_details']
-});
 
 var app = new Vue({
     el: '#app',
@@ -16444,7 +16440,13 @@ var app = new Vue({
 
         players: [],
 
-        game_request: null
+        game_request: null,
+
+        default_grid_width: 3,
+
+        send_request_details: { user_id: null, grid_width: 3 },
+
+        playbackdata: null
     },
     methods: {
         gameover: function gameover() {
@@ -16460,10 +16462,14 @@ var app = new Vue({
                     _this.game_request = _this.players.find(function (p) {
                         return p.id == e.id;
                     });
+                    _this.game_request.grid_width = parseInt(e.grid_width) || 3;
                 }
             }).listen('GameRefusedEvent', function (data) {
                 _this.alert = data.reason;
             }).listen('GameStartedEvent', function (data) {
+                if (_this.game_request) {
+                    _this.default_grid_width = parseInt(_this.game_request.grid_width);
+                }
                 _this.gameStarted = true;
                 _this.opponent = data.user;
                 _this.cur_player = data.starts_game ? _this.me : _this.opponent;
@@ -16491,6 +16497,7 @@ var app = new Vue({
             var _this2 = this;
 
             axios.post('/new-game-accepted/' + this.game_request.id).then(function () {
+                _this2.default_grid_width = parseInt(_this2.game_request.grid_width);
                 _this2.game_request = null;
             }).catch(function (e) {
                 console.log('Error when accepting game request');
@@ -16500,15 +16507,32 @@ var app = new Vue({
         refuseGameRequest: function refuseGameRequest() {
             axios.post('/new-game-refused/' + this.game_request.id, { reason: "Game request refused because player doesn't feel like playing right now." }).then(this.game_request = null);
         },
+        showGameRequestModal: function showGameRequestModal(user_id) {
+            this.send_request_details = { user_id: user_id };
+            $('#modal-game-request').modal('show');
+        },
+        sendGameRequest: function sendGameRequest() {
+            this.default_grid_width = parseInt(this.send_request_details.grid_width);
+            axios.post('/new-game-request/' + this.send_request_details.user_id, {
+                grid_width: this.send_request_details.grid_width
+            }).then(function (e) {}).catch(function (e) {
+                console.log('game request error');
+                console.log(e);
+            });
+        },
         newGameVsComp: function newGameVsComp() {
             this.opponent = { id: null, name: "Comp" };
             this.cur_player = this.me;
             this.starts_game = true;
             this.gameStarted = true;
         },
+        newPlayBackGame: function newPlayBackGame(game_id) {},
         showDetails: function showDetails(user_id) {
             var _this3 = this;
 
+            if (user_id === null) {
+                return false;
+            }
             axios.post('/player/' + user_id).then(function (e) {
                 _this3.player_details = e.data;
                 var size_played = [];
@@ -16517,12 +16541,6 @@ var app = new Vue({
                 }
                 _this3.player_details.size_played = size_played.join("<br />");
                 $('#modal-player-details').modal('show');
-            });
-        },
-        ping: function ping(user_id) {
-            axios.post('/new-game-request/' + user_id).then(function (e) {}).catch(function (e) {
-                console.log('game request error');
-                console.log(e);
             });
         }
     },
@@ -17416,21 +17434,20 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
-//
 
 
 
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
-    props: ['opponent', 'me', 'starts_game'],
+    props: ['opponent', 'me', 'starts_game', 'playbackdata', 'default_grid_width'],
 
     components: { Cell: __WEBPACK_IMPORTED_MODULE_0__Cell_vue___default.a },
 
     data: function data() {
         return {
             cells: [],
-            grid_width: 3,
+            grid_width: this.default_grid_width,
             nb_cells: 9,
             moves: [],
             drawGame: false,
@@ -17466,7 +17483,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             }
         },
         incSize: function incSize(step) {
-            if (this.grid_width <= 3 && step < 0 || this.grid_width >= 9 && step > 0) {
+            if (this.grid_width <= 3 && step < 0 || this.grid_width >= 10 && step > 0) {
                 return false;
             }
             this.grid_width += step;
@@ -17480,16 +17497,28 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             this.cur_player = null;
             this.initBoard();
         },
+        handlePlayBackClick: function handlePlayBackClick() {
+            this.lastCell = this.recordedMoves.shift();
+            this.applyMove();
+            if (!this.isGameOver) {
+                this.changePlayerTurn();
+            } else {
+                $('#modal-game-over').modal('show');
+            }
+        },
         handleClick: function handleClick(index) {
-            var user_click = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+            var user_triggered_click = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
 
-            if (this.isGameOver) {
+            if (this.isGameOver || this.cells[index].display !== '') {
                 return false;
             }
-            if (this.moves.length == 0) {
+            if (this.isPlayingBack) {
+                return this.handlePlayBackClick();
+            }
+            if (this.moves.length === 0) {
                 this.time_start = __WEBPACK_IMPORTED_MODULE_2_moment___default()();
             }
-            if (!this.vsComp && user_click && this.cur_player.id != this.me.id) {
+            if (this.notMyTurn(user_triggered_click)) {
                 return false;
             }
             this.lastCell = index;
@@ -17497,20 +17526,23 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             if (!this.isGameOver) {
                 this.changePlayerTurn();
             }
-            if (user_click !== false && !this.vsComp) {
+            if (user_triggered_click !== false && !this.vsComp && !this.isPlayingBack) {
                 this.sendMoveToOpponent();
             }
             if (this.isGameOver) {
                 $('#modal-game-over').modal('show');
                 this.saveGame();
             } else if (this.vsComp && this.cur_player.id != this.me.id) {
-                // Comp is stupid
-                var first_empty_cell = this.cells.find(function (c) {
-                    return c.display == '';
-                });
-                if (first_empty_cell !== undefined) {
-                    this.handleClick(first_empty_cell.index);
-                }
+                this.letComputerPlay();
+            }
+        },
+        letComputerPlay: function letComputerPlay() {
+            // Comp is stupid
+            var first_empty_cell = this.cells.find(function (c) {
+                return c.display == '';
+            });
+            if (first_empty_cell !== undefined) {
+                this.handleClick(first_empty_cell.index);
             }
         },
         changePlayerTurn: function changePlayerTurn() {
@@ -17527,22 +17559,23 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             this.moves.push(this.lastCell);
         },
         saveGame: function saveGame() {
-            if (!this.starts_game) {
+            if (!this.starts_game || this.isPlayingBack) {
                 return false;
             }
             var data = {
                 elapsed: __WEBPACK_IMPORTED_MODULE_2_moment___default()().diff(this.time_start, 'seconds'),
                 moves: this.moves,
+                first_player: this.starts_game ? this.me.id : this.opponent.id,
                 winner: this.cur_player.id,
-                looser: this.cur_player.id == this.opponent.id ? this.me.id : this.opponent.id,
+                looser: this.cur_player.id === this.opponent.id ? this.me.id : this.opponent.id,
                 size: this.grid_width
             };
             __WEBPACK_IMPORTED_MODULE_1_axios___default.a.post('/game-save', data).then(this.notifySaved).catch(function (error) {
                 return console.log(error);
             });
         },
-        notifySaved: function notifySaved() {
-            //                this.$emit('gameover')
+        notMyTurn: function notMyTurn(user_triggered_click) {
+            return !this.vsComp && user_triggered_click && this.cur_player.id != this.me.id;
         },
         sendMoveToOpponent: function sendMoveToOpponent() {
             __WEBPACK_IMPORTED_MODULE_1_axios___default.a.post('/new-move/' + this.opponent.id, { index: this.lastCell, display: this.cells[this.lastCell].display }).then(function (e) {
@@ -17616,6 +17649,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 return "It's a draw game!";
             }
             return this.cur_player.id == this.me.id ? 'YOU WIN!' : this.cur_player.name + " WINS!";
+        },
+        isPlayingBack: function isPlayingBack() {
+            return this.playbackdata !== null;
         }
     }
 });
@@ -52928,7 +52964,10 @@ module.exports = Component.exports
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
   return _c('div', {
-    staticClass: "cell"
+    staticClass: "cell",
+    class: {
+      pointer: _vm.display === '', 'not-allowed': _vm.display !== ''
+    }
   }, [_vm._v(_vm._s(_vm.display))])
 },staticRenderFns: []}
 module.exports.render._withStripped = true
@@ -52944,31 +52983,7 @@ if (false) {
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
-  return _c('div', {
-    staticClass: "panel panel-default"
-  }, [_c('div', {
-    staticClass: "panel-heading"
-  }, [_vm._v("Game board - "), _c('button', {
-    staticClass: "btn btn-primary btn-sm",
-    attrs: {
-      "disabled": !_vm.vsComp
-    },
-    on: {
-      "click": function($event) {
-        _vm.incSize(1)
-      }
-    }
-  }, [_vm._v("Inc size")]), _vm._v(" - "), _c('button', {
-    staticClass: "btn btn-primary btn-sm",
-    attrs: {
-      "disabled": !_vm.vsComp
-    },
-    on: {
-      "click": function($event) {
-        _vm.incSize(-1)
-      }
-    }
-  }, [_vm._v("Dec size")])]), _vm._v(" "), _c('div', {
+  return _c('div', [_c('div', {
     staticClass: "panel-body"
   }, _vm._l((_vm.cells), function(cell) {
     return _c('cell', {
@@ -52988,7 +53003,27 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     })
   })), _vm._v(" "), _c('div', {
     staticClass: "panel-body"
-  }, [_c('p', [_vm._v("You're playing against " + _vm._s(_vm.opponent.name))]), _vm._v(" "), (_vm.cur_player) ? _c('p', [_vm._v(_vm._s(_vm.cur_player.name) + "'s turn")]) : _vm._e(), _vm._v("\n        Number of moves: " + _vm._s(_vm.moves.length)), _c('br'), _vm._v(" "), _c('button', {
+  }, [_c('button', {
+    staticClass: "btn btn-primary btn-sm",
+    attrs: {
+      "disabled": !_vm.vsComp
+    },
+    on: {
+      "click": function($event) {
+        _vm.incSize(1)
+      }
+    }
+  }, [_vm._v("Inc size")]), _vm._v(" - "), _c('button', {
+    staticClass: "btn btn-primary btn-sm",
+    attrs: {
+      "disabled": !_vm.vsComp
+    },
+    on: {
+      "click": function($event) {
+        _vm.incSize(-1)
+      }
+    }
+  }, [_vm._v("Dec size")]), _vm._v(" "), (_vm.cur_player) ? _c('p', [_vm._v(_vm._s(_vm.cur_player.name) + "'s turn")]) : _vm._e(), _vm._v("\n        Number of moves: " + _vm._s(_vm.moves.length)), _c('br'), _vm._v(" "), _c('button', {
     directives: [{
       name: "show",
       rawName: "v-show",

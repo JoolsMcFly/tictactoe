@@ -1,5 +1,5 @@
 <template>
-    <div class="cell">{{ display }}</div>
+    <div class="cell" :class="{pointer: display === '', 'not-allowed': display !== ''}">{{ display }}</div>
 </template>
 
 <script>

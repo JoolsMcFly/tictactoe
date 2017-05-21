@@ -3,10 +3,6 @@ require('./bootstrap');
 window.Vue = require('vue');
 
 Vue.component('board', require('./components/Board.vue'));
-Vue.component('modal', {
-    template: '#modal-player-details',
-    props: ['player_details']
-});
 
 const app = new Vue({
     el: '#app',
@@ -33,7 +29,13 @@ const app = new Vue({
 
         players: [],
 
-        game_request: null
+        game_request: null,
+
+        default_grid_width: 3,
+
+        send_request_details: {user_id: null, grid_width: 3},
+
+        playbackdata: null
     },
     methods: {
         gameover() {
@@ -47,12 +49,16 @@ const app = new Vue({
                             axios.post('/new-game-refused/' + e.id, {reason: 'Game request refused. Player is busy... Playing!'})
                         } else {
                             this.game_request = this.players.find(p => p.id == e.id)
+                            this.game_request.grid_width = parseInt(e.grid_width) || 3
                         }
                     })
                     .listen('GameRefusedEvent', data => {
                         this.alert = data.reason
                     })
                     .listen('GameStartedEvent', data => {
+                        if (this.game_request) {
+                            this.default_grid_width = parseInt(this.game_request.grid_width)
+                        }
                         this.gameStarted = true
                         this.opponent = data.user
                         this.cur_player = data.starts_game ? this.me : this.opponent
@@ -79,6 +85,7 @@ const app = new Vue({
 
         acceptGameRequest() {
             axios.post('/new-game-accepted/' + this.game_request.id).then(() => {
+                this.default_grid_width = parseInt(this.game_request.grid_width)
                 this.game_request = null
             }).catch(e => {
                 console.log('Error when accepting game request')
@@ -90,6 +97,22 @@ const app = new Vue({
             axios.post('/new-game-refused/' + this.game_request.id, {reason: "Game request refused because player doesn't feel like playing right now."}).then(this.game_request = null)
         },
 
+        showGameRequestModal(user_id) {
+            this.send_request_details = {user_id: user_id}
+            $('#modal-game-request').modal('show')
+        },
+
+        sendGameRequest() {
+            this.default_grid_width = parseInt(this.send_request_details.grid_width)
+            axios.post('/new-game-request/' + this.send_request_details.user_id, {
+                grid_width: this.send_request_details.grid_width
+            }).then(e => {
+            }).catch(e => {
+                console.log('game request error');
+                console.log(e);
+            });
+        },
+
         newGameVsComp() {
             this.opponent = {id: null, name: "Comp"}
             this.cur_player = this.me
@@ -97,7 +120,14 @@ const app = new Vue({
             this.gameStarted = true
         },
 
+        newPlayBackGame(game_id) {
+
+        },
+
         showDetails(user_id) {
+            if (user_id === null) {
+                return false
+            }
             axios.post('/player/' + user_id).then(e => {
                 this.player_details = e.data
                 let size_played = []
@@ -107,14 +137,6 @@ const app = new Vue({
                 this.player_details.size_played = size_played.join("<br />")
                 $('#modal-player-details').modal('show')
             })
-        },
-
-        ping(user_id) {
-            axios.post('/new-game-request/' + user_id).then(e => {
-            }).catch(e => {
-                console.log('game request error');
-                console.log(e);
-            });
         }
     },
 

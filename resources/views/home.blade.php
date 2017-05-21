@@ -34,12 +34,17 @@
             </div>
         </div>
         <div class="col-xs-4">
+            <div v-show="players.length > 0">
             Players online:<br />
             <ul>
                 <li class="list-unstyled" v-for="player in players">
                     @{{ player.name }}<span class="glyphicon glyphicon-eye-open" title="view player details" @click="showDetails(player.id)" aria-hidden="true"></span>&nbsp;<span title="start a game with player" class="glyphicon glyphicon-play" aria-hidden="true" @click="showGameRequestModal(player.id)"></span>
                 </li>
             </ul>
+            </div>
+            <div v-show="players.length === 0">
+                No registered players online.
+            </div>
         </div>
     </div>
     <div class="modal fade" tabindex="-1" role="dialog" id="modal-player-details">

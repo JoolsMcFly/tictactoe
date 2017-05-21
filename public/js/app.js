@@ -16409,22 +16409,9 @@ module.exports = function(module) {
 /* 127 */
 /***/ (function(module, exports, __webpack_require__) {
 
-
-/**
- * First we will load all of this project's JavaScript dependencies which
- * includes Vue and other libraries. It is a great starting point when
- * building robust, powerful web applications using Vue and Laravel.
- */
-
 __webpack_require__(148);
 
 window.Vue = __webpack_require__(165);
-
-/**
- * Next, we will create a fresh Vue application instance and attach it to
- * the page. Then, you may begin adding components to this application
- * or customize the JavaScript scaffolding to fit your unique needs.
- */
 
 Vue.component('board', __webpack_require__(158));
 Vue.component('modal', {
@@ -16529,7 +16516,7 @@ var app = new Vue({
                     size_played.push(size + " x " + size + ": " + e.data.size_played[size] + " times");
                 }
                 _this3.player_details.size_played = size_played.join("<br />");
-                _this3.showPlayerDetails = true;
+                $('#modal-player-details').modal('show');
             });
         },
         ping: function ping(user_id) {
@@ -17416,6 +17403,20 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 
 
@@ -17499,10 +17500,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             if (user_click !== false && !this.vsComp) {
                 this.sendMoveToOpponent();
             }
-            if (this.moves.length == this.nb_cells && !this.isGameOver) {
-                this.drawGame = true;
-                this.saveGame();
-            } else if (this.isGameOver) {
+            if (this.isGameOver) {
+                $('#modal-game-over').modal('show');
                 this.saveGame();
             } else if (this.vsComp && this.cur_player.id != this.me.id) {
                 // Comp is stupid
@@ -17528,7 +17527,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             this.moves.push(this.lastCell);
         },
         saveGame: function saveGame() {
-            this.$emit('gameover');
             if (!this.starts_game) {
                 return false;
             }
@@ -17543,7 +17541,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 return console.log(error);
             });
         },
-        notifySaved: function notifySaved() {},
+        notifySaved: function notifySaved() {
+            //                this.$emit('gameover')
+        },
         sendMoveToOpponent: function sendMoveToOpponent() {
             __WEBPACK_IMPORTED_MODULE_1_axios___default.a.post('/new-move/' + this.opponent.id, { index: this.lastCell, display: this.cells[this.lastCell].display }).then(function (e) {
                 console.log("Move sent");
@@ -17606,7 +17606,16 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             if (this.winsDiagonal() || this.winsRow() || this.winsColumn()) {
                 return true;
             }
-            return false;
+            return this.drawGame = this.moves.length === this.nb_cells;
+        },
+        gameOverMessage: function gameOverMessage() {
+            if (!this.cur_player) {
+                return {};
+            }
+            if (this.drawGame) {
+                return "It's a draw game!";
+            }
+            return this.cur_player.id == this.me.id ? 'YOU WIN!' : this.cur_player.name + " WINS!";
         }
     }
 });
@@ -52961,7 +52970,7 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     }
   }, [_vm._v("Dec size")])]), _vm._v(" "), _c('div', {
     staticClass: "panel-body"
-  }, [_vm._l((_vm.cells), function(cell) {
+  }, _vm._l((_vm.cells), function(cell) {
     return _c('cell', {
       key: cell.index,
       class: {
@@ -52977,11 +52986,7 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
         }
       }
     })
-  }), _vm._v(" "), (_vm.isGameOver) ? _c('p', {
-    staticClass: "pull-right"
-  }, [_vm._v(_vm._s(_vm.cur_player.name) + " WINS!")]) : _vm._e(), _vm._v(" "), (_vm.drawGame) ? _c('p', {
-    staticClass: "pull-right"
-  }, [_vm._v("DRAW!")]) : _vm._e()], 2), _vm._v(" "), _c('div', {
+  })), _vm._v(" "), _c('div', {
     staticClass: "panel-body"
   }, [_c('p', [_vm._v("You're playing against " + _vm._s(_vm.opponent.name))]), _vm._v(" "), (_vm.cur_player) ? _c('p', [_vm._v(_vm._s(_vm.cur_player.name) + "'s turn")]) : _vm._e(), _vm._v("\n        Number of moves: " + _vm._s(_vm.moves.length)), _c('br'), _vm._v(" "), _c('button', {
     directives: [{
@@ -52994,7 +52999,65 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     on: {
       "click": _vm.reset
     }
-  }, [_vm._v("Reset")])])])
+  }, [_vm._v("Reset")])]), _vm._v(" "), _c('div', {
+    staticClass: "modal fade",
+    class: { in: _vm.isGameOver
+    },
+    staticStyle: {
+      "display": "none"
+    },
+    attrs: {
+      "tabindex": "-1",
+      "role": "dialog",
+      "id": "modal-game-over"
+    }
+  }, [_c('div', {
+    staticClass: "modal-dialog",
+    attrs: {
+      "role": "document"
+    }
+  }, [_c('div', {
+    staticClass: "modal-content"
+  }, [_c('div', {
+    staticClass: "modal-header"
+  }, [_c('button', {
+    staticClass: "close",
+    attrs: {
+      "type": "button",
+      "data-dismiss": "modal",
+      "aria-label": "Close"
+    }
+  }, [_c('span', {
+    attrs: {
+      "aria-hidden": "true"
+    },
+    on: {
+      "click": function($event) {
+        _vm.$emit('close')
+      }
+    }
+  }, [_vm._v("×")])]), _vm._v(" "), _c('h4', {
+    staticClass: "modal-title"
+  }, [_vm._v("Game over")])]), _vm._v(" "), _c('div', {
+    staticClass: "modal-body"
+  }, [_c('p', {
+    domProps: {
+      "textContent": _vm._s(_vm.gameOverMessage)
+    }
+  })]), _vm._v(" "), _c('div', {
+    staticClass: "modal-footer"
+  }, [_c('button', {
+    staticClass: "btn btn-primary",
+    attrs: {
+      "type": "button",
+      "data-dismiss": "modal"
+    },
+    on: {
+      "click": function($event) {
+        _vm.$emit('gameover')
+      }
+    }
+  }, [_vm._v("Close")])])])])])])
 },staticRenderFns: []}
 module.exports.render._withStripped = true
 if (false) {

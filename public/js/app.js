@@ -16446,7 +16446,11 @@ var app = new Vue({
 
         send_request_details: { user_id: null, grid_width: 3 },
 
-        playbackdata: null
+        playbackdata: null,
+
+        video_mode: false,
+
+        games: []
     },
     methods: {
         gameover: function gameover() {
@@ -16526,7 +16530,30 @@ var app = new Vue({
             this.starts_game = true;
             this.gameStarted = true;
         },
-        newPlayBackGame: function newPlayBackGame(game_id) {},
+        replayGame: function replayGame(game) {
+            var comp = { id: null, name: 'Comp' };
+            if (game.winner === null) {
+                game.winner = comp;
+            } else if (game.looser === null) {
+                game.looser = comp;
+            }
+
+            if (game.winner.id == this.me.id) {
+                this.opponent = game.looser;
+            } else {
+                this.opponent = game.winner;
+            }
+            if (game.first_player == this.me.id) {
+                this.cur_player = this.me.id;
+                this.starts_game = true;
+            } else {
+                this.cur_player = this.opponent.id;
+                this.starts_game = false;
+            }
+            this.grid_width = game.extra.size;
+            this.playbackdata = game.extra;
+            this.gameStarted = true;
+        },
         showDetails: function showDetails(user_id) {
             var _this3 = this;
 
@@ -16547,6 +16574,7 @@ var app = new Vue({
 
     mounted: function mounted() {
         this.me = window.ttt_user;
+        this.games = window.games;
         this.listen();
     }
 });
@@ -17434,6 +17462,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
+//
 
 
 
@@ -17498,7 +17529,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             this.initBoard();
         },
         handlePlayBackClick: function handlePlayBackClick() {
-            this.lastCell = this.recordedMoves.shift();
+            this.lastCell = this.playbackdata.moves.shift();
             this.applyMove();
             if (!this.isGameOver) {
                 this.changePlayerTurn();
@@ -53003,7 +53034,7 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     })
   })), _vm._v(" "), _c('div', {
     staticClass: "panel-body"
-  }, [_c('button', {
+  }, [(!_vm.isPlayingBack) ? _c('div', [_c('button', {
     staticClass: "btn btn-primary btn-sm",
     attrs: {
       "disabled": !_vm.vsComp
@@ -53023,18 +53054,29 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
         _vm.incSize(-1)
       }
     }
-  }, [_vm._v("Dec size")]), _vm._v(" "), (_vm.cur_player) ? _c('p', [_vm._v(_vm._s(_vm.cur_player.name) + "'s turn")]) : _vm._e(), _vm._v("\n        Number of moves: " + _vm._s(_vm.moves.length)), _c('br'), _vm._v(" "), _c('button', {
+  }, [_vm._v("Dec size")])]) : _vm._e(), _vm._v(" "), (_vm.cur_player) ? _c('p', [_vm._v(_vm._s(_vm.cur_player.name) + "'s turn")]) : _vm._e(), _vm._v("\n        Number of moves: " + _vm._s(_vm.moves.length)), _c('br'), _vm._v(" "), _c('button', {
     directives: [{
       name: "show",
       rawName: "v-show",
-      value: (_vm.vsComp),
-      expression: "vsComp"
+      value: (_vm.vsComp && !_vm.isPlayingBack),
+      expression: "vsComp && !isPlayingBack"
     }],
     staticClass: "btn btn-primary",
     on: {
       "click": _vm.reset
     }
-  }, [_vm._v("Reset")])]), _vm._v(" "), _c('div', {
+  }, [_vm._v("Reset")]), _vm._v(" "), _c('button', {
+    directives: [{
+      name: "show",
+      rawName: "v-show",
+      value: (_vm.isPlayingBack),
+      expression: "isPlayingBack"
+    }],
+    staticClass: "btn btn-primary",
+    on: {
+      "click": _vm.handlePlayBackClick
+    }
+  }, [_vm._v("Next move")])]), _vm._v(" "), _c('div', {
     staticClass: "modal fade",
     class: { in: _vm.isGameOver
     },

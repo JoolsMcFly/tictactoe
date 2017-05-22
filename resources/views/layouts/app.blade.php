@@ -15,6 +15,9 @@
     @if (!Auth::guest())
     <script>
     window.ttt_user = JSON.parse('{!! json_encode($user) !!}');
+    @if (!empty($games))
+    window.games = JSON.parse('{!! json_encode($games) !!}');
+    @endif
     </script>
     @endif
 </head>

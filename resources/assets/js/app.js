@@ -35,7 +35,11 @@ const app = new Vue({
 
         send_request_details: {user_id: null, grid_width: 3},
 
-        playbackdata: null
+        playbackdata: null,
+        
+        video_mode: false,
+        
+        games: []
     },
     methods: {
         gameover() {
@@ -120,8 +124,32 @@ const app = new Vue({
             this.gameStarted = true
         },
 
-        newPlayBackGame(game_id) {
+        replayGame(game) {
+            const comp =  {id: null, name: 'Comp'}
+            if (game.winner === null) {
+                game.winner = comp
+            }
+            else if (game.looser === null) {
+                game.looser = comp
+            }
 
+            if (game.winner.id == this.me.id) {
+                this.opponent = game.looser
+            }
+            else {
+                this.opponent = game.winner
+            }
+            if (game.first_player == this.me.id) {
+                this.cur_player = this.me.id
+                this.starts_game = true
+            }
+            else {
+                this.cur_player = this.opponent.id
+                this.starts_game = false
+            }
+            this.grid_width = game.extra.size
+            this.playbackdata = game.extra
+            this.gameStarted = true
         },
 
         showDetails(user_id) {
@@ -142,6 +170,7 @@ const app = new Vue({
 
     mounted() {
         this.me = window.ttt_user
+        this.games = window.games
         this.listen()
     }
 });

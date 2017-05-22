@@ -30,8 +30,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/game-save', function () {
         $input = Input::all();
         \App\Game::create([
-            'winner' => $input['winner'],
-            'looser' => $input['looser'],
+            'winner_id' => $input['winner'],
+            'looser_id' => $input['looser'],
             'first_player' => $input['first_player'],
             'extra' => [
                 'elapsed' => $input['elapsed'],

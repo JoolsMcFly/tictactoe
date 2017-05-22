@@ -4,10 +4,13 @@
             <cell v-for="cell in cells" :key="cell.index" :index="cell.index" :display="cell.display" @click.native="handleClick(cell.index)" :class="{clear: cell.index % grid_width == 0}"></cell>
         </div>
         <div class="panel-body">
+            <div v-if="!isPlayingBack">
             <button class="btn btn-primary btn-sm" :disabled="!vsComp" @click="incSize(1)">Inc size</button> - <button class="btn btn-primary btn-sm" :disabled="!vsComp" @click="incSize(-1)">Dec size</button>
+            </div>
             <p v-if="cur_player">{{cur_player.name}}'s turn</p>
             Number of moves: {{ moves.length }}<br />
-            <button v-show="vsComp" class="btn btn-primary" @click="reset">Reset</button>
+            <button v-show="vsComp && !isPlayingBack" class="btn btn-primary" @click="reset">Reset</button>
+            <button v-show="isPlayingBack" class="btn btn-primary" @click="handlePlayBackClick">Next move</button>
         </div>
         <div class="modal fade" :class="{in: isGameOver}" tabindex="-1" role="dialog" id="modal-game-over" style="display: none">
             <div class="modal-dialog" role="document">
@@ -94,7 +97,7 @@
                     },
                     
                     handlePlayBackClick () {
-                        this.lastCell = this.recordedMoves.shift()
+                        this.lastCell = this.playbackdata.moves.shift()
                         this.applyMove()
                         if (!this.isGameOver) {
                             this.changePlayerTurn()

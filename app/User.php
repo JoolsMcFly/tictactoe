@@ -34,4 +34,24 @@ class User extends Authenticatable
         'size_played' => 'array'
     ];
 
+    public function gamesWon()
+    {
+        return $this->hasMany(Game::class, 'winner_id');
+    }
+
+    public function gamesLost()
+    {
+        return $this->hasMany(Game::class, 'looser_id');
+    }
+
+    public function getGamesAttribute()
+    {
+        return $this->games()->get();
+    }
+
+    public function games()
+    {
+        return Game::where('winner_id', $this->id)->orWhere('looser_id', $this->id)->orderBy('id', 'desc')->take(5);
+    }
+
 }

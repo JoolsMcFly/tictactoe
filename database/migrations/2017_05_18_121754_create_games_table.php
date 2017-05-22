@@ -15,9 +15,9 @@ class CreateGamesTable extends Migration
     {
         Schema::create('games', function (Blueprint $table) {
             $table->increments('id');
-            $table->integer('winner')->references('id')->on('users')->nullable();
+            $table->integer('winner_id')->references('id')->on('users')->nullable();
             $table->integer('first_player')->references('id')->on('users')->nullable();
-            $table->integer('looser')->references('id')->on('users')->nullable();
+            $table->integer('looser_id')->references('id')->on('users')->nullable();
             $table->json('extra');
             $table->timestamps();
         });

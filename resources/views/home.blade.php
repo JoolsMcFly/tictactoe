@@ -19,6 +19,16 @@
                     </div>
                 </div>
             </div>
+            <div class="panel panel-default" v-show="games.length > 0">
+                <div class="panel-heading">Latest games played</div>
+                <div class="panel-body">
+                    <ul class="list-unstyled">
+                        <li v-for="game in games">
+                            <span v-text="game.created_at"></span>: You <span v-if="game.winner_id != me.id" class="bg-danger">lost</span><span v-if="game.winner_id == me.id" class="bg-success">won</span> this game in @{{ game.extra.moves.length }} moves. <i class="glyphicon glyphicon-facetime-video" title="Watch a replay" @click="replayGame(game)"></i>
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
         <div class="col-xs-4">
             <div class="panel panel-default">

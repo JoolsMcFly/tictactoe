@@ -29,7 +29,7 @@ class PusherTest extends DuskTestCase
             $first->waitForText('Players online');
             $first->assertSee($user1->name);
 
-            $second->click('span.glyphicon-play');
+            $second->click('span[data-player-id="' . $user1->id . '"]');
             $grid_width = 8;
             $second->whenAvailable('#modal-game-request', function ($modal) use($grid_width) {
                 $modal->select('#grid_width', $grid_width);
@@ -43,7 +43,7 @@ class PusherTest extends DuskTestCase
             $second->assertSee($user2->name . "'s turn");
 
             $first->waitForText("You're playing against {$user2->name}");
-            PHPUnit::assertCount(16, $first->elements('div.cell.pointer'), 'Unexpected grid width found.');
+            PHPUnit::assertCount($grid_width * $grid_width, $first->elements('div.cell.pointer'), 'Unexpected grid width found.');
         });
     }
 }

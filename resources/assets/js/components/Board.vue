@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="panel-body">
+        <div class="panel-body" id="board-div">
             <cell v-for="cell in cells" :key="cell.index" :index="cell.index" :display="cell.display" @click.native="handleClick(cell.index)" :class="{clear: cell.index % grid_width == 0}"></cell>
         </div>
         <div class="panel-body">
@@ -108,6 +108,9 @@
                     },
 
                     handleClick(index, user_triggered_click = true) {
+                        if (this.isPlayingBack) {
+                            return this.handlePlayBackClick()
+                        }
                         if (this.isGameOver || this.cells[index].display !== '') { 
                             return false
                         }

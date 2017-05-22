@@ -16471,6 +16471,7 @@ var app = new Vue({
             }).listen('GameRefusedEvent', function (data) {
                 _this.alert = data.reason;
             }).listen('GameStartedEvent', function (data) {
+                _this.playbackdata = null;
                 if (_this.game_request) {
                     _this.default_grid_width = parseInt(_this.game_request.grid_width);
                 }
@@ -16529,8 +16530,10 @@ var app = new Vue({
             this.cur_player = this.me;
             this.starts_game = true;
             this.gameStarted = true;
+            this.playbackdata = null;
         },
         replayGame: function replayGame(game) {
+            this.gameStarted = false;
             var comp = { id: null, name: 'Comp' };
             if (game.winner === null) {
                 game.winner = comp;
@@ -16550,8 +16553,8 @@ var app = new Vue({
                 this.cur_player = this.opponent.id;
                 this.starts_game = false;
             }
-            this.grid_width = game.extra.size;
-            this.playbackdata = game.extra;
+            this.default_grid_width = game.extra.size;
+            this.playbackdata = JSON.parse(JSON.stringify(game.extra));
             this.gameStarted = true;
         },
         showDetails: function showDetails(user_id) {
@@ -17540,6 +17543,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         handleClick: function handleClick(index) {
             var user_triggered_click = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
 
+            if (this.isPlayingBack) {
+                return this.handlePlayBackClick();
+            }
             if (this.isGameOver || this.cells[index].display !== '') {
                 return false;
             }
@@ -53015,7 +53021,10 @@ if (false) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
   return _c('div', [_c('div', {
-    staticClass: "panel-body"
+    staticClass: "panel-body",
+    attrs: {
+      "id": "board-div"
+    }
   }, _vm._l((_vm.cells), function(cell) {
     return _c('cell', {
       key: cell.index,

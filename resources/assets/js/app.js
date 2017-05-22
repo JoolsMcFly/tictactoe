@@ -60,6 +60,7 @@ const app = new Vue({
                         this.alert = data.reason
                     })
                     .listen('GameStartedEvent', data => {
+                        this.playbackdata = null
                         if (this.game_request) {
                             this.default_grid_width = parseInt(this.game_request.grid_width)
                         }
@@ -122,9 +123,11 @@ const app = new Vue({
             this.cur_player = this.me
             this.starts_game = true
             this.gameStarted = true
+            this.playbackdata = null
         },
 
         replayGame(game) {
+            this.gameStarted = false
             const comp =  {id: null, name: 'Comp'}
             if (game.winner === null) {
                 game.winner = comp
@@ -147,8 +150,8 @@ const app = new Vue({
                 this.cur_player = this.opponent.id
                 this.starts_game = false
             }
-            this.grid_width = game.extra.size
-            this.playbackdata = game.extra
+            this.default_grid_width = game.extra.size
+            this.playbackdata = JSON.parse(JSON.stringify(game.extra))
             this.gameStarted = true
         },
 

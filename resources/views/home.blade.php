@@ -24,7 +24,7 @@
                 <div class="panel-body">
                     <ul class="list-unstyled">
                         <li v-for="game in games">
-                            <span v-text="game.created_at"></span>: You <span v-if="game.winner_id != me.id" class="bg-danger">lost</span><span v-if="game.winner_id == me.id" class="bg-success">won</span> this game in @{{ game.extra.moves.length }} moves. <i class="glyphicon glyphicon-facetime-video" title="Watch a replay" @click="replayGame(game)"></i>
+                            <span v-text="game.created_at"></span>: You <span v-if="game.winner_id != me.id" class="bg-danger">lost</span><span v-if="game.winner_id == me.id" class="bg-success">won</span> this game in @{{ game.extra.moves.length }} moves on a @{{ game.extra.size + ' x ' + game.extra.size}} grid. <i class="glyphicon glyphicon-facetime-video" title="Watch a replay" @click="replayGame(game)"></i>
                         </li>
                     </ul>
                 </div>
@@ -32,7 +32,9 @@
         </div>
         <div class="col-xs-4">
             <div class="panel panel-default">
-                <div class="panel-heading">Game board<span v-if="gameStarted"> - You're playing against <strong :class="{pointer: opponent.id}" :title="opponent.id ? 'view player details' : ''" @click="showDetails(opponent.id)">@{{ opponent.name }}</strong></span></div>
+                <div class="panel-heading">Game board<span v-if="gameStarted"> - You're playing against <strong :class="{pointer: opponent.id}" :title="opponent.id ? 'view player details' : ''" @click="showDetails(opponent.id)">@{{ opponent.name }}</strong></span>
+                    <i v-if="playbackdata" title="you're Watching a game replay" class="glyphicon glyphicon-facetime-video"></i>
+                </div>
                 <div class="panel-body" v-if="!gameStarted">
                     <p>
                         <span v-show="players.length == 0">You can wait until someone logs in </span>
@@ -48,7 +50,7 @@
             Players online:<br />
             <ul>
                 <li class="list-unstyled" v-for="player in players">
-                    @{{ player.name }}<span class="glyphicon glyphicon-eye-open" title="view player details" @click="showDetails(player.id)" aria-hidden="true"></span>&nbsp;<span title="start a game with player" class="glyphicon glyphicon-play" aria-hidden="true" @click="showGameRequestModal(player.id)"></span>
+                    @{{ player.name }}<span class="glyphicon glyphicon-eye-open" title="view player details" @click="showDetails(player.id)" aria-hidden="true"></span>&nbsp;<span title="start a game with player" class="glyphicon glyphicon-play" aria-hidden="true" :data-player-id="player.id" @click="showGameRequestModal(player.id)"></span>
                 </li>
             </ul>
             </div>

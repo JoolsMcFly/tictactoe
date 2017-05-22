@@ -5,7 +5,6 @@ use Laravel\Dusk\TestCase as BaseTestCase;
 use Facebook\WebDriver\Remote\RemoteWebDriver;
 use Facebook\WebDriver\Remote\DesiredCapabilities;
 use Faker\Factory;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
 
 abstract class DuskTestCase extends BaseTestCase
 {

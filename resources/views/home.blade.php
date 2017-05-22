@@ -95,7 +95,7 @@
                 </div>
                 <div class="modal-body">
                     <p>What grid size would you like to play?</p>
-                    <select v-model="send_request_details.grid_width">
+                    <select id="grid_width" v-model="send_request_details.grid_width">
                         @for ($size=3; $size < 12; $size++)
                         <option value="{{$size}}">{{ "$size x $size" }}</option>
                         @endfor

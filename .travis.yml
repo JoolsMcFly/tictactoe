@@ -3,9 +3,14 @@ php:
   - '7.1'
 
 before_script:
-  - composer self-update
-  - composer install --prefer-source --no-interaction --dev
-  - psql -c 'create database travis_ci_test;' -U postgres
+    - composer self-update
+    - composer install --prefer-source --no-interaction --dev
+    - psql -c 'create database travis_ci_test;' -U postgres
+    - export DISPLAY=:99.0
+    - sh -e /etc/init.d/xvfb start
+    - ./vendor/laravel/dusk/bin/chromedriver-linux &
+    - cp .env.testing .env
+    - php artisan serve &
 
 services:
   - postgresql

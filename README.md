@@ -9,5 +9,7 @@ It's me having fun creating an online game
 - Vue.js 2.0
 - pusher
 
-# How far from completion is it?
-I need to fix a couple of minor issues but most elements are implemented.
+# TODO
+- write more tests for Vue using karma and jasmine
+- get pusher to work on heroku
+- auto deploy to heroku on success

@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/JoolsMcFly/tictactoe.svg?branch=master)](https://travis-ci.org/JoolsMcFly/tictactoe)
+
 # What is this TicTacToe project?
 It's me having fun creating an online game
 

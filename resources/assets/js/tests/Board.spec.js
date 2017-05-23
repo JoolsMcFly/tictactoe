@@ -4,7 +4,7 @@ import Cell from '../components/Cell.vue';
 import Board from '../components/Board.vue';
 import Echo from 'laravel-echo'
 
-        window.Pusher = require('pusher-js');
+window.Pusher = require('pusher-js');
 
 window.Echo = new Echo({
     broadcaster: 'pusher',
@@ -33,8 +33,8 @@ describe('Board.vue', () => {
             expect(vm.$el.textContent).toContain("Jools's turn");
         })
     })
-    
-    it("mounts and shows it is my turn", () => {
+
+    it("mounts and shows it is Comp's turn", () => {
         const Constructor = Vue.extend(Board)
         const vm = new Constructor({propsData: {
                 opponent: {

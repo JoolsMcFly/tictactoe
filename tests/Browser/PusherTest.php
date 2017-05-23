@@ -30,7 +30,7 @@ class PusherTest extends DuskTestCase
             $first->assertSee($user1->name);
 
             $second->click('span[data-player-id="' . $user1->id . '"]');
-            $grid_width = 8;
+            $grid_width = 4;
             $second->whenAvailable('#modal-game-request', function ($modal) use($grid_width) {
                 $modal->select('#grid_width', $grid_width);
                 $modal->press('Send');

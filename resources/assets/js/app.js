@@ -36,14 +36,15 @@ const app = new Vue({
         send_request_details: {user_id: null, grid_width: 3},
 
         playbackdata: null,
-        
+
         video_mode: false,
-        
+
         games: []
     },
     methods: {
         gameover() {
             this.gameStarted = false
+            this.playbackdata = null
         },
 
         listen() {
@@ -118,6 +119,17 @@ const app = new Vue({
             });
         },
 
+        saveGame(data) {
+            axios.post('/game-save', data)
+                    .then((game_data) => this.notifySaved(game_data))
+                    .catch(error => console.log(error))
+        },
+
+        notifySaved(game_data) {
+            this.games.unshift(game_data.data)
+            this.games = this.games.slice(0, 5)
+        },
+
         newGameVsComp() {
             this.opponent = {id: null, name: "Comp"}
             this.cur_player = this.me
@@ -128,25 +140,22 @@ const app = new Vue({
 
         replayGame(game) {
             this.gameStarted = false
-            const comp =  {id: null, name: 'Comp'}
+            const comp = {id: null, name: 'Comp'}
             if (game.winner === null) {
                 game.winner = comp
-            }
-            else if (game.looser === null) {
+            } else if (game.looser === null) {
                 game.looser = comp
             }
 
             if (game.winner.id == this.me.id) {
                 this.opponent = game.looser
-            }
-            else {
+            } else {
                 this.opponent = game.winner
             }
             if (game.first_player == this.me.id) {
                 this.cur_player = this.me.id
                 this.starts_game = true
-            }
-            else {
+            } else {
                 this.cur_player = this.opponent.id
                 this.starts_game = false
             }

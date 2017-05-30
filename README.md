@@ -8,8 +8,10 @@ It's me having fun creating an online game
 - Laravel Echo
 - Vue.js 2.0
 - pusher
+- postgres
 
 # TODO
-- write more tests for Vue using karma and jasmine
+- write more tests for Vue
+- refactor / clean up
 - get pusher to work on heroku
 - auto deploy to heroku on success

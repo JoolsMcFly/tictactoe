@@ -16455,6 +16455,7 @@ var app = new Vue({
     methods: {
         gameover: function gameover() {
             this.gameStarted = false;
+            this.playbackdata = null;
         },
         listen: function listen() {
             var _this = this;
@@ -16525,6 +16526,19 @@ var app = new Vue({
                 console.log(e);
             });
         },
+        saveGame: function saveGame(data) {
+            var _this3 = this;
+
+            axios.post('/game-save', data).then(function (game_data) {
+                return _this3.notifySaved(game_data);
+            }).catch(function (error) {
+                return console.log(error);
+            });
+        },
+        notifySaved: function notifySaved(game_data) {
+            this.games.unshift(game_data.data);
+            this.games = this.games.slice(0, 5);
+        },
         newGameVsComp: function newGameVsComp() {
             this.opponent = { id: null, name: "Comp" };
             this.cur_player = this.me;
@@ -16558,18 +16572,18 @@ var app = new Vue({
             this.gameStarted = true;
         },
         showDetails: function showDetails(user_id) {
-            var _this3 = this;
+            var _this4 = this;
 
             if (user_id === null) {
                 return false;
             }
             axios.post('/player/' + user_id).then(function (e) {
-                _this3.player_details = e.data;
+                _this4.player_details = e.data;
                 var size_played = [];
                 for (size in e.data.size_played) {
                     size_played.push(size + " x " + size + ": " + e.data.size_played[size] + " times");
                 }
-                _this3.player_details.size_played = size_played.join("<br />");
+                _this4.player_details.size_played = size_played.join("<br />");
                 $('#modal-player-details').modal('show');
             });
         }
@@ -17595,6 +17609,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             Vue.set(this.cells, this.lastCell, cell);
             this.moves.push(this.lastCell);
         },
+        notMyTurn: function notMyTurn(user_triggered_click) {
+            return !this.vsComp && user_triggered_click && this.cur_player.id != this.me.id;
+        },
         saveGame: function saveGame() {
             if (!this.starts_game || this.isPlayingBack) {
                 return false;
@@ -17607,12 +17624,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 looser: this.cur_player.id === this.opponent.id ? this.me.id : this.opponent.id,
                 size: this.grid_width
             };
-            __WEBPACK_IMPORTED_MODULE_1_axios___default.a.post('/game-save', data).then(this.notifySaved).catch(function (error) {
-                return console.log(error);
-            });
-        },
-        notMyTurn: function notMyTurn(user_triggered_click) {
-            return !this.vsComp && user_triggered_click && this.cur_player.id != this.me.id;
+            this.$emit('savegame', data);
         },
         sendMoveToOpponent: function sendMoveToOpponent() {
             __WEBPACK_IMPORTED_MODULE_1_axios___default.a.post('/new-move/' + this.opponent.id, { index: this.lastCell, display: this.cells[this.lastCell].display }).then(function (e) {

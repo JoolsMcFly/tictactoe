@@ -29,7 +29,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::post('/game-save', function () {
         $input = Input::all();
-        \App\Game::create([
+        $game = \App\Game::create([
             'winner_id' => $input['winner'],
             'looser_id' => $input['looser'],
             'first_player' => $input['first_player'],
@@ -60,6 +60,7 @@ Route::group(['middleware' => 'auth'], function () {
             $player->size_played = $size_played;
             $player->save();
             broadcast(new GameOverEvent($player));
+            return response()->json($game->load('winner', 'looser')->toArray());
         }
     });
 

@@ -161,6 +161,10 @@
                         Vue.set(this.cells, this.lastCell, cell)
                         this.moves.push(this.lastCell)
                     },
+                    
+                    notMyTurn (user_triggered_click) {
+                        return !this.vsComp && user_triggered_click && this.cur_player.id != this.me.id
+                    },
 
                     saveGame() {
                         if (!this.starts_game || this.isPlayingBack) {
@@ -174,13 +178,7 @@
                             looser: (this.cur_player.id === this.opponent.id ? this.me.id : this.opponent.id),
                             size: this.grid_width
                         }
-                        axios.post('/game-save', data)
-                                .then(this.notifySaved)
-                                .catch(error => console.log(error))
-                    },
-                    
-                    notMyTurn (user_triggered_click) {
-                        return !this.vsComp && user_triggered_click && this.cur_player.id != this.me.id
+                        this.$emit('savegame', data);
                     },
 
                     sendMoveToOpponent() {

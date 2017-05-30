@@ -42,7 +42,7 @@
                         <br />or <button class="btn btn-primary" v-show="!this.gameStarted" @click="newGameVsComp">play a game vs comp</button>
                     </p>
                 </div>
-                <board v-if="gameStarted" :opponent="opponent" :me="me" :starts_game="starts_game" :default_grid_width="default_grid_width" v-on:gameover="gameover" :playbackdata="playbackdata"></board>
+                <board v-if="gameStarted" :opponent="opponent" :me="me" :starts_game="starts_game" :default_grid_width="default_grid_width" v-on:gameover="gameover" v-on:savegame="saveGame" :playbackdata="playbackdata"></board>
             </div>
         </div>
         <div class="col-xs-4">

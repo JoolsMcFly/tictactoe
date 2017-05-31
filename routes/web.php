@@ -5,17 +5,6 @@ use App\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Input;
 
-/*
-  |--------------------------------------------------------------------------
-  | Web Routes
-  |--------------------------------------------------------------------------
-  |
-  | Here is where you can register web routes for your application. These
-  | routes are loaded by the RouteServiceProvider within a group which
-  | contains the "web" middleware group. Now create something great!
-  |
- */
-
 Route::get('/', function () {
     if (Auth::guest()) {
         return view('welcome');
@@ -39,6 +28,7 @@ Route::group(['middleware' => 'auth'], function () {
                 'moves' => $input['moves']
             ]
         ]);
+        $game_details = $game->load('winner', 'looser')->toArray();
         foreach ([$input['winner'], $input['looser']] as $user_id) {
             $player = User::find($user_id);
             if (!$player) {
@@ -59,8 +49,7 @@ Route::group(['middleware' => 'auth'], function () {
             }
             $player->size_played = $size_played;
             $player->save();
-            broadcast(new GameOverEvent($player));
-            return response()->json($game->load('winner', 'looser')->toArray());
+            broadcast(new GameOverEvent($player, $game_details));
         }
     });
 

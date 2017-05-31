@@ -1,6 +1,7 @@
 <?php
 namespace App\Events;
 
+use App\Game;
 use App\User;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
@@ -8,7 +9,6 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Auth;
 
 class GameOverEvent implements ShouldBroadcast
 {
@@ -20,20 +20,17 @@ class GameOverEvent implements ShouldBroadcast
      * @var User
      */
     private $to_user;
-
-    /**
-     * @var User
-     */
-    private $from_user;
+    private $game_details;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct(User $to_user)
+    public function __construct(User $to_user, $game_details)
     {
         $this->to_user = $to_user;
+        $this->game_details = $game_details;
     }
 
     /**
@@ -48,6 +45,9 @@ class GameOverEvent implements ShouldBroadcast
 
     public function broadcastWith()
     {
-        return $this->to_user->toArray();
+        return [
+            'user' => $this->to_user->toArray(),
+            'game' => $this->game_details
+        ];
     }
 }

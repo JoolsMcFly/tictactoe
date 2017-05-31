@@ -97,6 +97,9 @@
                     },
                     
                     handlePlayBackClick () {
+                        if (this.playbackdata.moves.length <= 0) {
+                            return false
+                        }
                         this.lastCell = this.playbackdata.moves.shift()
                         this.applyMove()
                         if (!this.isGameOver) {
@@ -182,11 +185,10 @@
                     },
 
                     sendMoveToOpponent() {
-                        axios.post('/new-move/' + this.opponent.id, {index: this.lastCell, display: this.cells[this.lastCell].display})
-                                .then(e => {
-                                    console.log("Move sent");
-                                    console.log(e);
-                                });
+                        this.$emit('newmove', {
+                            opponent_id: this.opponent.id,
+                            data: {index: this.lastCell, display: this.cells[this.lastCell].display}
+                        })
                     },
 
                     winsRow() {

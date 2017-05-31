@@ -45,6 +45,7 @@ const app = new Vue({
         gameover() {
             this.gameStarted = false
             this.playbackdata = null
+            this.video_mode = false
         },
 
         listen() {
@@ -71,7 +72,9 @@ const app = new Vue({
                         this.starts_game = data.starts_game
                     })
                     .listen('GameOverEvent', data => {
-                        this.me = data
+                        this.me = data.user
+                        this.games.unshift(data.game)
+                        this.games = this.games.slice(0, 5)
                     });
             Echo.join('tictactoe')
                     .here(users => {
@@ -121,13 +124,15 @@ const app = new Vue({
 
         saveGame(data) {
             axios.post('/game-save', data)
-                    .then((game_data) => this.notifySaved(game_data))
                     .catch(error => console.log(error))
         },
 
-        notifySaved(game_data) {
-            this.games.unshift(game_data.data)
-            this.games = this.games.slice(0, 5)
+        newMove(data) {
+            axios.post('/new-move/' + data.opponent_id, data.data)
+                    .then(e => {
+                        console.log("Move sent");
+                        console.log(e);
+                    });
         },
 
         newGameVsComp() {

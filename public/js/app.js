@@ -16456,6 +16456,7 @@ var app = new Vue({
         gameover: function gameover() {
             this.gameStarted = false;
             this.playbackdata = null;
+            this.video_mode = false;
         },
         listen: function listen() {
             var _this = this;
@@ -16481,7 +16482,9 @@ var app = new Vue({
                 _this.cur_player = data.starts_game ? _this.me : _this.opponent;
                 _this.starts_game = data.starts_game;
             }).listen('GameOverEvent', function (data) {
-                _this.me = data;
+                _this.me = data.user;
+                _this.games.unshift(data.game);
+                _this.games = _this.games.slice(0, 5);
             });
             Echo.join('tictactoe').here(function (users) {
                 _this.players = users.filter(function (u) {
@@ -16527,17 +16530,15 @@ var app = new Vue({
             });
         },
         saveGame: function saveGame(data) {
-            var _this3 = this;
-
-            axios.post('/game-save', data).then(function (game_data) {
-                return _this3.notifySaved(game_data);
-            }).catch(function (error) {
+            axios.post('/game-save', data).catch(function (error) {
                 return console.log(error);
             });
         },
-        notifySaved: function notifySaved(game_data) {
-            this.games.unshift(game_data.data);
-            this.games = this.games.slice(0, 5);
+        newMove: function newMove(data) {
+            axios.post('/new-move/' + data.opponent_id, data.data).then(function (e) {
+                console.log("Move sent");
+                console.log(e);
+            });
         },
         newGameVsComp: function newGameVsComp() {
             this.opponent = { id: null, name: "Comp" };
@@ -16572,18 +16573,18 @@ var app = new Vue({
             this.gameStarted = true;
         },
         showDetails: function showDetails(user_id) {
-            var _this4 = this;
+            var _this3 = this;
 
             if (user_id === null) {
                 return false;
             }
             axios.post('/player/' + user_id).then(function (e) {
-                _this4.player_details = e.data;
+                _this3.player_details = e.data;
                 var size_played = [];
                 for (size in e.data.size_played) {
                     size_played.push(size + " x " + size + ": " + e.data.size_played[size] + " times");
                 }
-                _this4.player_details.size_played = size_played.join("<br />");
+                _this3.player_details.size_played = size_played.join("<br />");
                 $('#modal-player-details').modal('show');
             });
         }
@@ -17546,6 +17547,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             this.initBoard();
         },
         handlePlayBackClick: function handlePlayBackClick() {
+            if (this.playbackdata.moves.length <= 0) {
+                return false;
+            }
             this.lastCell = this.playbackdata.moves.shift();
             this.applyMove();
             if (!this.isGameOver) {
@@ -17627,9 +17631,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             this.$emit('savegame', data);
         },
         sendMoveToOpponent: function sendMoveToOpponent() {
-            __WEBPACK_IMPORTED_MODULE_1_axios___default.a.post('/new-move/' + this.opponent.id, { index: this.lastCell, display: this.cells[this.lastCell].display }).then(function (e) {
-                console.log("Move sent");
-                console.log(e);
+            this.$emit('newmove', {
+                opponent_id: this.opponent.id,
+                data: { index: this.lastCell, display: this.cells[this.lastCell].display }
             });
         },
         winsRow: function winsRow() {
